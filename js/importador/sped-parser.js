@@ -437,21 +437,88 @@ async function parsearArquivoSped(arquivo, opcoes = {}) {
             };
         }
 
-        // 4. Retornar resultado básico (versão simplificada para correção)
+        // 4. Processar o conteúdo e extrair registros
+        parser.adicionarLog('Iniciando extração de registros do SPED...');
+        const startTime = performance.now();
+
+        const linhas = conteudo.split(CONFIG.terminadorLinha);
+        const registrosExtraidos = {};
+        let dadosEmpresa = {
+            razaoSocial: null,
+            cnpj: null,
+            dataInicialPeriodo: null, // Será preenchido pelo extractor específico
+            dataFinalPeriodo: null   // Será preenchido pelo extractor específico
+        };
+        const resumo = {
+            totalTiposRegistro: 0,
+            registrosPorTipo: {}
+        };
+
+        for (const linha of linhas) {
+            parser.estatisticas.linhasProcessadas++;
+            const linhaTrimmed = linha.trim();
+
+            if (linhaTrimmed === '') {
+                continue;
+            }
+
+            if (!linhaTrimmed.startsWith(CONFIG.separadorCampo) || !linhaTrimmed.endsWith(CONFIG.separadorCampo)) {
+                parser.estatisticas.linhasComErro++;
+                parser.adicionarLog(`Linha ignorada (formato inválido): ${linhaTrimmed.substring(0, 50)}...`, 'warning');
+                continue;
+            }
+
+            parser.estatisticas.registrosEncontrados++;
+            const campos = linhaTrimmed.split(CONFIG.separadorCampo);
+
+            // campos[0] é vazio devido ao "|" inicial, campos[1] é o tipo do registro
+            // campos[campos.length - 1] é vazio devido ao "|" final
+            if (campos.length < 2) { // Deve ter pelo menos |REG|
+                parser.estatisticas.linhasComErro++;
+                parser.adicionarLog(`Linha ignorada (sem campos suficientes): ${linhaTrimmed.substring(0,50)}...`, 'warning');
+                continue;
+            }
+            
+            const tipoRegistro = campos[1];
+            const camposValores = campos.slice(2, campos.length -1); // Ignora o primeiro vazio, o tipo, e o último vazio
+
+            if (!registrosExtraidos[tipoRegistro]) {
+                registrosExtraidos[tipoRegistro] = [];
+            }
+            registrosExtraidos[tipoRegistro].push(camposValores);
+            parser.estatisticas.registrosValidos++;
+
+            // Tentar extrair dados da empresa do registro 0000 (primeira ocorrência)
+            if (tipoRegistro === '0000' && !dadosEmpresa.cnpj && camposValores.length >= 6) {
+                dadosEmpresa.razaoSocial = camposValores[4]; // NOME
+                dadosEmpresa.cnpj = camposValores[5];       // CNPJ
+                dadosEmpresa.dataInicialPeriodo = camposValores[2]; // DT_INI
+                dadosEmpresa.dataFinalPeriodo = camposValores[3];   // DT_FIN
+                parser.adicionarLog(`Dados da empresa extraídos do registro 0000: ${dadosEmpresa.razaoSocial}`, 'info');
+            }
+        }
+
+        // Calcular resumo
+        for (const tipo in registrosExtraidos) {
+            if (registrosExtraidos.hasOwnProperty(tipo)) {
+                resumo.registrosPorTipo[tipo] = registrosExtraidos[tipo].length;
+                resumo.totalTiposRegistro++;
+            }
+        }
+        
+        parser.estatisticas.tempoProcessamento = performance.now() - startTime;
+        parser.adicionarLog(`Extração de registros concluída em ${parser.estatisticas.tempoProcessamento.toFixed(2)}ms`, 'info', {
+            registros: resumo.totalTiposRegistro,
+            linhas: parser.estatisticas.linhasProcessadas
+        });
+
+        // 5. Retornar resultado do parsing
         return {
             sucesso: true,
             tipoSped: tipoIdentificado,
-            dadosEmpresa: {
-                razaoSocial: 'Empresa Exemplo',
-                cnpj: '00.000.000/0001-00',
-                dataInicialPeriodo: '2024-01-01',
-                dataFinalPeriodo: '2024-12-31'
-            },
-            registros: {},
-            resumo: {
-                totalTiposRegistro: 0,
-                registrosPorTipo: {}
-            },
+            dadosEmpresa: dadosEmpresa,
+            registros: registrosExtraidos,
+            resumo: resumo,
             estatisticas: parser.estatisticas,
             log: parser.log,
             metadados: {

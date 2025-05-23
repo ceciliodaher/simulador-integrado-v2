@@ -413,14 +413,26 @@ window.ImportacaoController = (function() {
                 cofins: composicao.creditos.cofins || 0,
                 icms: composicao.creditos.icms || 0,
                 ipi: composicao.creditos.ipi || 0,
-                cbs: 0,
+                cbs: 0, // CBS e IBS não são diretamente do SPED legado
                 ibs: 0
+            };
+
+            // Mapear débitos tributários
+            dadosEstruturados.parametrosFiscais.debitos = {
+                pis: composicao.debitos.pis || 0,
+                cofins: composicao.debitos.cofins || 0,
+                icms: composicao.debitos.icms || 0,
+                ipi: composicao.debitos.ipi || 0,
+                iss: composicao.debitos.iss || 0, // Adicionando ISS se existir
+                outros: composicao.debitos.outros || 0 // Adicionando Outros se existir
             };
 
             // Calcular alíquota efetiva total
             dadosEstruturados.parametrosFiscais.aliquota = (composicao.aliquotasEfetivas.total || 0) / 100;
             
             adicionarLogImportacao(`✓ Composição tributária mapeada - Alíquota efetiva: ${composicao.aliquotasEfetivas.total.toFixed(2)}%`, 'info');
+            adicionarLogImportacao(`✓ Débitos mapeados: PIS R$${(composicao.debitos.pis || 0).toFixed(2)}, COFINS R$${(composicao.debitos.cofins || 0).toFixed(2)}, ICMS R$${(composicao.debitos.icms || 0).toFixed(2)}`, 'info');
+            adicionarLogImportacao(`✓ Créditos mapeados: PIS R$${(composicao.creditos.pis || 0).toFixed(2)}, COFINS R$${(composicao.creditos.cofins || 0).toFixed(2)}, ICMS R$${(composicao.creditos.icms || 0).toFixed(2)}`, 'info');
         }
 
         // Mapear dados financeiros
@@ -481,6 +493,69 @@ window.ImportacaoController = (function() {
         adicionarLogImportacao('✅ Dados integrados com sucesso ao simulador!', 'success');
         adicionarLogImportacao('🎯 Formulário do simulador preenchido automaticamente', 'success');
 
+        // ---- START: UI adjustments after SPED import ----
+        if (window.dadosImportadosSped && 
+            window.dadosImportadosSped.empresa &&
+            window.dadosImportadosSped.empresa.receitas &&
+            window.dadosImportadosSped.empresa.receitas.receitaBruta > 0) { // Check if actual financial data was populated
+
+            adicionarLogImportacao('⚙️ Ajustando UI para dados financeiros detalhados do SPED...', 'info');
+
+            const detailedFinancialFields = [
+                'receita-bruta',
+                'receita-liquida',
+                'custo-total',
+                'despesas-operacionais'
+            ];
+
+            detailedFinancialFields.forEach(id => {
+                const field = document.getElementById(id);
+                if (field) {
+                    field.readOnly = true;
+                    field.classList.add('sped-derived-readonly');
+                    field.title = 'Este valor foi extraído do SPED e não pode ser editado diretamente aqui. Utilize a importação para alterar.';
+                }
+            });
+
+            // Ensure 'usar-dados-financeiros' checkbox is checked and disabled
+            const usarDadosFinanceirosCheckbox = document.getElementById('usar-dados-financeiros');
+            if (usarDadosFinanceirosCheckbox) {
+                usarDadosFinanceirosCheckbox.checked = true;
+                usarDadosFinanceirosCheckbox.disabled = true;
+                // Explicitly call toggleDadosFinanceiros to ensure correct UI state for detailed fields
+                if (typeof window.toggleDadosFinanceiros === 'function') {
+                    window.toggleDadosFinanceiros(true); // Force show detailed fields
+                }
+            }
+            
+            // Call calcularDadosFinanceiros() to update dependent readonly fields like lucro-operacional and margem-operacional-calc
+            if (typeof window.calcularDadosFinanceiros === 'function') {
+                window.calcularDadosFinanceiros();
+                adicionarLogImportacao('🔄 Recalculando totais financeiros com dados SPED...', 'info');
+            } else {
+                adicionarLogImportacao('⚠️ Função calcularDadosFinanceiros() não encontrada. Dependentes podem não ter sido atualizados.', 'warning');
+            }
+
+            // Disable manual 'margem' input and update its value from calculated margem
+            const margemInput = document.getElementById('margem');
+            const margemCalculadaDisplay = document.getElementById('margem-operacional-calc'); // Assuming this field displays the calculated margin as a percentage string
+            
+            if (margemInput) {
+                margemInput.disabled = true;
+                margemInput.classList.add('sped-derived-readonly');
+                margemInput.title = 'A margem operacional é calculada automaticamente a partir dos dados financeiros detalhados do SPED.';
+                if (margemCalculadaDisplay && margemCalculadaDisplay.value) {
+                    // Convert the displayed percentage (e.g., "15.50%") to decimal for the input field
+                    const margemCalculadaValor = parseFloat(margemCalculadaDisplay.value.replace('%', '')) / 100;
+                    if (!isNaN(margemCalculadaValor)) {
+                         margemInput.value = (margemCalculadaValor * 100).toFixed(2); // Store as percentage string, e.g., "15.50"
+                    }
+                }
+                 adicionarLogImportacao('🔒 Campo de margem manual desabilitado e atualizado com valor SPED.', 'info');
+            }
+        }
+        // ---- END: UI adjustments after SPED import ----
+
         // Adicionar indicador visual no simulador
         adicionarIndicadorDadosSped();
     }
@@ -534,7 +609,16 @@ window.ImportacaoController = (function() {
             'credito-cofins',
             'credito-icms',
             'credito-ipi',
-            'aliquota-efetiva-total'
+            // 'aliquota-efetiva-total' // This is often a calculated/display field, not a direct input. Confirm if it's an input.
+            // Adding detailed financial fields and ISS debit
+            'receita-bruta',
+            'receita-liquida',
+            'custo-total',
+            'despesas-operacionais',
+            'debito-iss' 
+            // Note: lucro-operacional and lucro-liquido are often calculated display fields.
+            // If they are input fields populated directly, they should be added too.
+            // Similarly, if 'aliquota-efetiva-total' is a direct input field, uncomment it.
         ];
 
         camposSped.forEach(id => {
@@ -543,13 +627,43 @@ window.ImportacaoController = (function() {
                 campo.classList.add('sped-data');
                 campo.title = 'Valor extraído dos arquivos SPED importados';
                 
-                // Adicionar ícone indicativo
-                if (!campo.parentElement.querySelector('.sped-icon')) {
+                // Adicionar ícone indicativo SPED (database icon)
+                const parentElement = campo.parentElement;
+                if (parentElement && !parentElement.querySelector('.sped-icon')) {
                     const icon = document.createElement('span');
                     icon.className = 'sped-icon';
-                    icon.innerHTML = '<i class="fas fa-database text-info"></i>';
+                    icon.innerHTML = '<i class="fas fa-database text-info" style="margin-left: 5px;"></i>'; // Added some style for spacing
                     icon.title = 'Dados extraídos do SPED';
-                    campo.parentElement.appendChild(icon);
+                    // Append to parent, or insert after field if it's a direct child of a more complex structure
+                    parentElement.appendChild(icon);
+                }
+
+                // Remover/Ocultar qualquer etiqueta "EST"
+                // Tentativa 1: Verificar se há um elemento span com a classe 'est-label' como irmão do input ou do seu pai.
+                // Esta é uma suposição, a classe real pode ser diferente.
+                let estLabel = null;
+                if (parentElement) {
+                    estLabel = parentElement.querySelector('.est-label'); // Se o label estiver dentro do pai do input
+                    if (!estLabel && parentElement.previousElementSibling && parentElement.previousElementSibling.classList.contains('est-label')) {
+                        estLabel = parentElement.previousElementSibling; // Se o label for irmão do pai do input
+                    }
+                    if (!estLabel && campo.nextElementSibling && campo.nextElementSibling.classList.contains('est-label')) {
+                        estLabel = campo.nextElementSibling; // Se o label for irmão direto do input
+                    }
+                     if (!estLabel && campo.previousElementSibling && campo.previousElementSibling.classList.contains('est-label')) {
+                        estLabel = campo.previousElementSibling; // Se o label for irmão direto do input
+                    }
+                }
+                
+                if (estLabel) {
+                    estLabel.style.display = 'none'; // Oculta a etiqueta "EST"
+                    adicionarLogImportacao(`✓ Etiqueta "EST" ocultada para o campo ${id}`, 'info');
+                } else {
+                    // Tentativa 2: Remover uma classe genérica de estimativa do próprio campo, se existir
+                    if(campo.classList.contains('estimated-value')) {
+                        campo.classList.remove('estimated-value');
+                        adicionarLogImportacao(`✓ Classe 'estimated-value' removida do campo ${id}`, 'info');
+                    }
                 }
             }
         });

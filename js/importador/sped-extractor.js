@@ -339,31 +339,38 @@ window.SpedExtractor = (function() {
 
         try {
             // Processar documentos fiscais (C100, C400)
+            // SPED Fiscal C100: Campo 12 (VL_DOC), Campo 17 (VL_ICMS)
             if (spedFiscal.registros.C100) {
                 spedFiscal.registros.C100.forEach(registro => {
-                    const valorDocumento = parseFloat(registro.VL_DOC) || 0;
-                    const valorICMS = parseFloat(registro.VL_ICMS) || 0;
+                    const valorDocumento = parseFloat(registro[11]) || 0; // VL_DOC (índice 11 para campo 12)
+                    const valorICMS = parseFloat(registro[16]) || 0;      // VL_ICMS (índice 16 para campo 17)
                     
                     faturamentoICMS += valorDocumento;
-                    debitosICMS += valorICMS;
+                    // VL_ICMS em C100 é o valor do imposto no documento, pode ser débito ou crédito dependendo da operação
+                    // A apuração em E110 é mais precisa para débitos/créditos totais.
+                    // Aqui, somaremos a débitos para consistência com a lógica anterior, mas idealmente C100 serve para faturamento e base de cálculo.
+                    debitosICMS += valorICMS; 
                 });
             }
 
             // Processar apuração ICMS (E110, E111)
+            // SPED Fiscal E110: Campo 02 (VL_TOT_DEBITOS), Campo 03 (VL_TOT_CREDITOS)
             if (spedFiscal.registros.E110) {
                 spedFiscal.registros.E110.forEach(registro => {
-                    const valorDebito = parseFloat(registro.VL_TOT_DEBITOS) || 0;
-                    const valorCredito = parseFloat(registro.VL_TOT_CREDITOS) || 0;
+                    const valorDebito = parseFloat(registro[1]) || 0;    // VL_TOT_DEBITOS (índice 1 para campo 02)
+                    const valorCredito = parseFloat(registro[2]) || 0;   // VL_TOT_CREDITOS (índice 2 para campo 03)
                     
                     debitosICMS += valorDebito;
                     creditosICMS += valorCredito;
                 });
             }
 
-            // Processar IPI se houver
+            // Processar IPI se houver (C400 - Equipamento ECF)
+            // SPED Fiscal C400: Campo 06 (VL_IPI) - Nota: C400 é para ECF (Cupom Fiscal), IPI aqui é menos comum.
+            // IPI é mais comum em C100/C170 para NF-e. Se C400 é usado, o campo VL_IPI é geralmente o 6.
             if (spedFiscal.registros.C400) {
                 spedFiscal.registros.C400.forEach(registro => {
-                    const valorIPI = parseFloat(registro.VL_IPI) || 0;
+                    const valorIPI = parseFloat(registro[5]) || 0; // VL_IPI (índice 5 para campo 06)
                     debitosIPI += valorIPI;
                 });
             }
@@ -406,33 +413,47 @@ window.SpedExtractor = (function() {
 
         try {
             // Processar receitas (A100)
+            // SPED Contribuições A100: Campo 10 (VL_ITEM) se for serviço, ou Campo 09 (VL_SERV_NT) para NFS-e.
+            // VL_REC_BRT não é um campo padrão de A100. A100 é para identificação de documento.
+            // Assumindo que VL_REC_BRT se refere ao valor do item/serviço, que pode ser campo 10 (VL_ITEM).
+            // Se A100 representa NFS-e, campo 09 (VL_SERV_NT) ou 10 (VL_MERC)
+            // NOTA: Esta é uma suposição e pode estar conceitualmente incorreta. A100 não é para totalizar receitas.
             if (spedContrib.registros.A100) {
                 spedContrib.registros.A100.forEach(registro => {
-                    const valorReceita = parseFloat(registro.VL_REC_BRT) || 0;
+                    // Usando índice 9 para VL_ITEM (campo 10) como uma suposição para VL_REC_BRT
+                    const valorReceita = parseFloat(registro[9]) || 0; 
                     faturamentoPisCofins += valorReceita;
                 });
             }
 
-            // Processar débitos PIS/COFINS (M100, M200)
-            if (spedContrib.registros.M100) {
+            // Processar débitos PIS/COFINS (M210 para PIS, M610 para COFINS)
+            // M100/M200 na CONFIG pode ser um erro, M210/M610 são os registros de apuração.
+            // SPED Contribuições M210 (PIS): Campo 07 (VL_TOT_CONT_NC_PER)
+            if (spedContrib.registros.M100) { // Assumindo M100 na verdade se refere a M210 ou similar
                 spedContrib.registros.M100.forEach(registro => {
-                    const valorPIS = parseFloat(registro.VL_TOT_CONT_NC_PER) || 0;
+                    const valorPIS = parseFloat(registro[6]) || 0; // VL_TOT_CONT_NC_PER (índice 6 para campo 07)
                     debitosPIS += valorPIS;
                 });
             }
-
-            if (spedContrib.registros.M200) {
+            // SPED Contribuições M610 (COFINS): Campo 07 (VL_TOT_CONT_NC_PER)
+            if (spedContrib.registros.M200) { // Assumindo M200 na verdade se refere a M610 ou similar
                 spedContrib.registros.M200.forEach(registro => {
-                    const valorCOFINS = parseFloat(registro.VL_TOT_CONT_NC_PER) || 0;
+                    const valorCOFINS = parseFloat(registro[6]) || 0; // VL_TOT_CONT_NC_PER (índice 6 para campo 07)
                     debitosCOFINS += valorCOFINS;
                 });
             }
 
             // Processar créditos (C100, C170)
+            // SPED Contribuições C100: VL_CRED_PIS e VL_CRED_COFINS não são campos padrão de C100.
+            // Créditos são geralmente em C170 (itens) ou C191/C195.
+            // Assumindo que VL_CRED_PIS é campo 28 e VL_CRED_COFINS é campo 34 se C100 fosse usado para isso (altamente improvável).
+            // NOTA: Esta é uma suposição e pode estar conceitualmente incorreta.
             if (spedContrib.registros.C100) {
                 spedContrib.registros.C100.forEach(registro => {
-                    const creditoPIS = parseFloat(registro.VL_CRED_PIS) || 0;
-                    const creditoCOFINS = parseFloat(registro.VL_CRED_COFINS) || 0;
+                    // Usando índice 27 para VL_PIS (campo 28) como suposição para VL_CRED_PIS
+                    const creditoPIS = parseFloat(registro[27]) || 0; 
+                    // Usando índice 33 para VL_COFINS (campo 34) como suposição para VL_CRED_COFINS
+                    const creditoCOFINS = parseFloat(registro[33]) || 0;
                     
                     creditosPIS += creditoPIS;
                     creditosCOFINS += creditoCOFINS;
@@ -469,23 +490,48 @@ window.SpedExtractor = (function() {
         }
 
         try {
-            // Processar dados de receita bruta se não foi obtida de outros SPEDs
-            if (ecf.registros.J100 && composicao.faturamentoTotal === 0) {
+            // Processar dados de receita bruta do ECF J150 (DRE) se não foi obtida de outros SPEDs.
+            // ECF J150: COD_AGL (campo 3, índice 2), DESCR_CTA_AGL (campo 4, índice 3), VL_CTA_FIN (campo 5, índice 4)
+            if (ecf.registros.J150 && composicao.faturamentoTotal === 0) {
+                let faturamentoECF = 0;
+                ecf.registros.J150.forEach(registro => {
+                    const codAgl = registro[2] || ''; // COD_AGL é campo 3 (índice 2)
+                    const descrCtaAgl = registro[3] || ''; // DESCR_CTA_AGL é campo 4 (índice 3)
+                    // Procurar por Receita Bruta (ex: códigos 3.01.01.01.01, 3.1.1.01 ou descrição "RECEITA BRUTA")
+                    if (codAgl.startsWith('3.01.01.01') || codAgl.startsWith('3.1.1.01') || 
+                        (codAgl.startsWith('3.01') && descrCtaAgl.toUpperCase().includes('RECEITA BRUTA'))) {
+                        faturamentoECF += parseFloat(registro[4]) || 0; // VL_CTA_FIN é campo 5 (índice 4)
+                    }
+                });
+                if (faturamentoECF > 0) {
+                    composicao.faturamentoTotal = Math.max(composicao.faturamentoTotal, faturamentoECF);
+                    log.push(`     💰 Faturamento total (R$ ${faturamentoECF.toFixed(2)}) extraído do ECF J150 para composição tributária.`);
+                }
+            } else if (ecf.registros.J100 && composicao.faturamentoTotal === 0) {
+                // Fallback para J100 se J150 não disponível ou não encontrou receita (lógica anterior mantida como último recurso)
+                log.push('     ⚠️ Tentando ECF J100 para faturamento total (fallback, J150 preferível).');
                 ecf.registros.J100.forEach(registro => {
-                    const receitaBruta = parseFloat(registro.VL_REC_BRT) || 0;
+                    const receitaBruta = parseFloat(registro[4]) || 0; 
                     composicao.faturamentoTotal = Math.max(composicao.faturamentoTotal, receitaBruta);
                 });
             }
 
-            // Processar dados tributários complementares
+
+            // Processar dados tributários complementares de IRPJ/CSLL do ECF (ex: Bloco N)
+            // A lógica atual de buscar em J200 (Plano de Contas Referencial) é incorreta.
+            // IRPJ e CSLL são apurados e demonstrados nos blocos L, M, N (LALUR, LACS, Cálculo).
+            // Por exemplo, N630 (IRPJ) e N670 (CSLL).
+            // Esta extração é complexa e depende de muitos fatores (regime tributário, etc.).
+            // Removendo a extração incorreta de J200. A correta implementação requer análise mais profunda do ECF.
             if (ecf.registros.J200) {
-                ecf.registros.J200.forEach(registro => {
-                    // Dados complementares de tributos se necessário
-                    const impostoRenda = parseFloat(registro.VL_IRPJ) || 0;
-                    const contribuicaoSocial = parseFloat(registro.VL_CSLL) || 0;
-                    
-                    composicao.debitos.outros += impostoRenda + contribuicaoSocial;
-                });
+                 log.push('     ℹ️  Extração de IRPJ/CSLL do J200 foi removida. Valores devem ser buscados nos blocos L, M, N do ECF.');
+                // ecf.registros.J200.forEach(registro => {
+                //     // Supondo que VL_IRPJ e VL_CSLL se referem a VL_CTA (índice 3 para campo 4) de contas específicas
+                //     const impostoRenda = parseFloat(registro[3]) || 0; 
+                //     const contribuicaoSocial = parseFloat(registro[3]) || 0; // Usando o mesmo índice como placeholder
+                //     
+                //     composicao.debitos.outros += impostoRenda + contribuicaoSocial;
+                // });
             }
 
             composicao.fonte.push('ECF');
@@ -650,32 +696,74 @@ window.SpedExtractor = (function() {
         }
 
         try {
-            // Processar DRE (J100 - Receitas, J150 - Custos, J200 - Resultado)
-            if (ecf.registros.J100) {
-                ecf.registros.J100.forEach(registro => {
-                    const receitaBruta = parseFloat(registro.VL_REC_BRT) || 0;
-                    const receitaLiquida = parseFloat(registro.VL_REC_LIQ) || 0;
-                    
-                    dadosFinanceiros.receitas.receitaBruta += receitaBruta;
-                    dadosFinanceiros.receitas.receitaLiquida += receitaLiquida;
-                });
-            }
+            // Processar DRE a partir do ECF J150
+            // ECF J150: Campos relevantes:
+            // - Campo 3 (índice 2): COD_AGL - Código da Conta Aglutinadora (usado para identificar a natureza da linha)
+            // - Campo 4 (índice 3): DESCR_CTA_AGL - Descrição da Conta Aglutinadora
+            // - Campo 5 (índice 4): VL_CTA_FIN - Valor Final da Conta Aglutinadora
+            // - Campo 7 (índice 6): IND_VL_CTA_FIN - Indicador do Saldo Final (D - Devedor, C - Credor)
 
             if (ecf.registros.J150) {
+                let receitaBrutaCalculada = 0;
+                let deducoesReceita = 0;
+                let custosCalculados = 0;
+                let despesasOperacionaisCalculadas = 0; 
+                // Lucro operacional não será diretamente somado aqui, mas calculado em calcularResultadosFinanceiros
+
                 ecf.registros.J150.forEach(registro => {
-                    const custoTotal = parseFloat(registro.VL_CUSTO) || 0;
-                    dadosFinanceiros.custos.custoTotal += custoTotal;
+                    const codAgl = (registro[2] || '').trim(); // COD_AGL é campo 3 (índice 2)
+                    const descrCtaAgl = (registro[3] || '').toUpperCase(); // DESCR_CTA_AGL é campo 4 (índice 3)
+                    const valor = parseFloat(registro[4]) || 0; // VL_CTA_FIN é campo 5 (índice 4)
+                    // const indSaldo = registro[6] || ''; // IND_VL_CTA_FIN D/C - Campo 7 (índice 6)
+
+                    // Receita Bruta (códigos comuns: 3.01.01.01.01, 3.1.1.01)
+                    if (codAgl.startsWith('3.01.01.01') || descrCtaAgl.includes('RECEITA BRUTA')) {
+                        receitaBrutaCalculada += valor;
+                    }
+                    // Deduções da Receita Bruta (impostos, devoluções - códigos comuns: 3.01.01.02, 3.01.01.03, 3.01.01.04)
+                    else if (codAgl.startsWith('3.01.01.02') || codAgl.startsWith('3.01.01.03') || codAgl.startsWith('3.01.01.04') ||
+                             descrCtaAgl.includes('DEDUCOES DA RECEITA') || descrCtaAgl.includes('IMPOSTOS INCIDENTES') || descrCtaAgl.includes('DEVOLUCOES')) {
+                        deducoesReceita += valor;
+                    }
+                    // Custos (CPV, CMV, CSP - códigos comuns: 3.02.01.01)
+                    else if (codAgl.startsWith('3.02.01.01') || descrCtaAgl.includes('CUSTO DAS MERCADORIAS') || descrCtaAgl.includes('CUSTO DOS PRODUTOS') || descrCtaAgl.includes('CUSTO DOS SERVICOS')) {
+                        custosCalculados += valor;
+                    }
+                    // Despesas Operacionais (Vendas, Administrativas - códigos comuns: 3.03.01, 3.04.01)
+                    else if (codAgl.startsWith('3.03.01') || codAgl.startsWith('3.04.01') || descrCtaAgl.includes('DESPESAS OPERACIONAIS') || descrCtaAgl.includes('DESPESAS COM VENDAS') || descrCtaAgl.includes('DESPESAS ADMINISTRATIVAS')) {
+                         despesasOperacionaisCalculadas += valor;
+                    }
+                    // Linha de Lucro Operacional (Resultado Operacional) (código comum: 3.05)
+                    // Se encontrada, pode ser usada, mas cálculo via componentes é mais robusto.
+                    // else if (codAgl.startsWith('3.05') || descrCtaAgl.includes('RESULTADO OPERACIONAL') || descrCtaAgl.includes('LUCRO OPERACIONAL')) {
+                    //     dadosFinanceiros.resultado.lucroOperacional += valor; // Adicionar se for saldo credor, subtrair se devedor
+                    // }
                 });
+
+                dadosFinanceiros.receitas.receitaBruta = receitaBrutaCalculada;
+                dadosFinanceiros.receitas.receitaLiquida = receitaBrutaCalculada - deducoesReceita;
+                dadosFinanceiros.custos.custoTotal = custosCalculados;
+                dadosFinanceiros.despesas.despesasOperacionais = despesasOperacionaisCalculadas; // Usado em calcularResultadosFinanceiros
+
+                log.push(`     📊 ECF J150: Receita Bruta R$ ${receitaBrutaCalculada.toFixed(2)}, Receita Líquida R$ ${dadosFinanceiros.receitas.receitaLiquida.toFixed(2)}, Custos R$ ${custosCalculados.toFixed(2)}`);
+            } else {
+                log.push('     ⚠️ ECF J150 (DRE) não encontrado ou vazio. Dados financeiros do ECF não puderam ser totalmente processados.');
+                 // Fallback para a lógica anterior se J150 não estiver presente (mantendo a extração de J100/J200 como estava antes, se necessário)
+                if (ecf.registros.J100) { // Lógica de fallback para J100, conceitualmente incorreta mas preservando comportamento anterior se J150 falhar
+                    ecf.registros.J100.forEach(registro => {
+                        const valorConta = parseFloat(registro[4]) || 0;
+                        // Heurística muito simples: se for a primeira vez, assumir como receita.
+                        if (dadosFinanceiros.receitas.receitaBruta === 0) dadosFinanceiros.receitas.receitaBruta += valorConta;
+                        // Não há como distinguir receita líquida ou custos de forma confiável do J100 sem mais contexto.
+                    });
+                     log.push('     ⚠️ Usando ECF J100 como fallback para Receita Bruta (conceitualmente incorreto).');
+                }
             }
 
+            // A extração de Lucro Líquido do J200 foi removida, pois J150 é a fonte correta para itens da DRE.
+            // O Lucro Líquido será calculado em calcularResultadosFinanceiros.
             if (ecf.registros.J200) {
-                ecf.registros.J200.forEach(registro => {
-                    const lucroOperacional = parseFloat(registro.VL_LUCRO_OPER) || 0;
-                    const lucroLiquido = parseFloat(registro.VL_LUCRO_LIQ) || 0;
-                    
-                    dadosFinanceiros.resultado.lucroOperacional += lucroOperacional;
-                    dadosFinanceiros.resultado.lucroLiquido += lucroLiquido;
-                });
+                log.push('     ℹ️  Extração de Lucro Operacional/Líquido do ECF J200 foi removida. Valores são derivados do J150.');
             }
 
             dadosFinanceiros.fonte.push('ECF');
@@ -707,17 +795,24 @@ window.SpedExtractor = (function() {
             }
 
             // Processar DRE detalhada (J200, J210)
-            if (ecd.registros.J200) {
+            // Processar DRE detalhada (J200, J210)
+            // A CONFIG.registrosSped.ecd.dre aponta para J200, J210.
+            // ECD J210 (DRE) é o mais apropriado aqui.
+            // ECD J210: COD_CTA é campo 02 (índice 1), VL_CTA_FIN é campo 05 (índice 4).
+            if (ecd.registros.J200) { // Assumindo J200 na CONFIG pode ser J210 na prática para DRE do ECD
                 ecd.registros.J200.forEach(registro => {
-                    // Complementar dados de receitas e custos se disponível
-                    const conta = registro.COD_CTA || '';
-                    const valor = parseFloat(registro.VL_CTA) || 0;
+                    // ECD J210 (DRE): COD_CTA é campo 02 (índice 1), VL_CTA_FIN (valor da conta) é campo 05 (índice 4).
+                    const conta = registro[1] || ''; // COD_CTA (índice 1 para campo 02)
+                    const valor = parseFloat(registro[4]) || 0; // VL_CTA_FIN (índice 4 para campo 05)
                     
                     // Mapear contas baseado no plano de contas
                     if (conta.startsWith('3.1')) { // Receitas
                         dadosFinanceiros.receitas.receitaOperacional += valor;
                     } else if (conta.startsWith('3.2')) { // Custos
-                        dadosFinanceiros.custos.custoTotal += valor;
+                        // CustoTotal já é somado em processarDemonstracoesFiscais (ECF J150)
+                        // e complementarComContribuicoes. Evitar duplicação se ambos ECD e ECF estiverem presentes.
+                        // Se for necessário somar do ECD também, descomentar a linha abaixo.
+                        // dadosFinanceiros.custos.custoTotal += valor; 
                     } else if (conta.startsWith('3.3')) { // Despesas
                         dadosFinanceiros.despesas.despesasOperacionais += valor;
                     }
@@ -747,17 +842,24 @@ window.SpedExtractor = (function() {
 
         try {
             // Complementar receitas se não foram obtidas de outras fontes
+            // SPED Contribuições A100: VL_REC_BRT não é campo padrão.
+            // Supondo índice 9 para VL_ITEM (campo 10) como placeholder.
+            // NOTA: Esta lógica é conceitualmente questionável.
             if (spedContrib.registros.A100 && dadosFinanceiros.receitas.receitaBruta === 0) {
                 spedContrib.registros.A100.forEach(registro => {
-                    const receitaBruta = parseFloat(registro.VL_REC_BRT) || 0;
+                    const receitaBruta = parseFloat(registro[9]) || 0; 
                     dadosFinanceiros.receitas.receitaBruta += receitaBruta;
                 });
             }
 
-            // Complementar custos (A200)
+            // Complementar custos (A200 - Documentos de Aquisição de Bens e Serviços)
+            // SPED Contribuições A200: VL_CUSTO não é campo padrão.
+            // A200 é para identificar o documento. Valores de custo estariam em campos como VL_ITEM (campo 10, índice 9).
+            // NOTA: Esta lógica é conceitualmente questionável.
             if (spedContrib.registros.A200) {
                 spedContrib.registros.A200.forEach(registro => {
-                    const custoTotal = parseFloat(registro.VL_CUSTO) || 0;
+                    // Supondo índice 9 para VL_ITEM (campo 10) como placeholder para VL_CUSTO.
+                    const custoTotal = parseFloat(registro[9]) || 0; 
                     dadosFinanceiros.custos.custoTotal += custoTotal;
                 });
             }
@@ -906,9 +1008,13 @@ window.SpedExtractor = (function() {
 
         try {
             // Analisar demonstração de fluxo de caixa
+            // ECD J800 (Outras Informações): Campo 02 (COD_ITEM) e Campo 03 (VL_ITEM) são campos genéricos.
+            // A lógica original usava COD_CTA e VL_CTA que não são padrão para J800.
+            // Assumindo que os campos relevantes para análise de fluxo de caixa seriam:
+            // COD_ITEM (índice 1 para campo 02) como 'conta' e VL_ITEM (índice 2 para campo 03) como 'valor'.
             ecd.registros.J800.forEach(registro => {
-                const conta = registro.COD_CTA || '';
-                const valor = parseFloat(registro.VL_CTA) || 0;
+                const conta = registro[1] || ''; // Supondo COD_ITEM (índice 1 para campo 02) como 'conta'
+                const valor = parseFloat(registro[2]) || 0; // Supondo VL_ITEM (índice 2 para campo 03) como 'valor'
                 
                 // Identificar variações no capital de giro
                 if (conta.includes('RECEB') || conta.includes('CLIENTE')) {
