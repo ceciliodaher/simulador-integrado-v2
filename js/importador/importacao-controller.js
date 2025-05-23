@@ -388,6 +388,7 @@ window.ImportacaoController = (function() {
 
         // Criar estrutura canônica do DataManager
         const dadosEstruturados = window.DataManager.obterEstruturaAninhadaPadrao();
+        adicionarLogImportacao('🔗 Iniciando mapeamento de dados SPED para a interface do simulador...', 'info');
 
         // Mapear dados da empresa
         if (dadosConsolidados.empresaInfo) {
@@ -404,7 +405,9 @@ window.ImportacaoController = (function() {
                 campoEmpresa.classList.add('sped-data');
             }
 
-            adicionarLogImportacao(`✓ Dados da empresa mapeados: ${empresa.razaoSocial}`, 'info');
+            adicionarLogImportacao(`✓ Dados da empresa mapeados: ${empresa.razaoSocial || 'N/A'}`, 'info');
+        } else {
+            adicionarLogImportacao('⚠️ Dados da empresa ausentes na consolidação SPED.', 'warning');
         }
 
         // Mapear composição tributária COM CRÉDITOS
@@ -444,7 +447,9 @@ window.ImportacaoController = (function() {
                 composicao.creditos.icms + composicao.creditos.ipi + composicao.creditos.iss
             );
 
-            adicionarLogImportacao(`✓ Composição tributária mapeada - Alíquota efetiva: ${composicao.aliquotasEfetivas.total.toFixed(2)}%`, 'info');
+            adicionarLogImportacao(`✓ Composição tributária mapeada. Faturamento Total: ${DataManager.formatarMoeda(composicao.faturamentoTotal || 0)}, Alíquota Efetiva Total: ${(composicao.aliquotasEfetivas.total || 0).toFixed(2)}%`, 'info');
+        } else {
+            adicionarLogImportacao('⚠️ Dados de composição tributária ausentes na consolidação SPED.', 'warning');
         }
 
         // Mapear dados financeiros (CORREÇÃO PARA EXIBIR NA INTERFACE)
@@ -478,7 +483,9 @@ window.ImportacaoController = (function() {
                 toggleDadosFinanceiros(); // Ativar campos
             }
 
-            adicionarLogImportacao(`✓ Dados financeiros detalhados importados e exibidos`, 'success');
+            adicionarLogImportacao(`✓ Dados financeiros mapeados. Receita Bruta: ${DataManager.formatarMoeda(financeiro.receitas.receitaBruta || 0)}, Margem Operacional: ${(financeiro.resultado.margemOperacional || 0).toFixed(2)}%`, 'info');
+        } else {
+            adicionarLogImportacao('⚠️ Dados financeiros detalhados ausentes na consolidação SPED. Campos financeiros podem não ser preenchidos ou usar estimativas.', 'warning');
         }
 
         // Mapear ciclo financeiro (CORREÇÃO DO CÁLCULO)
@@ -494,7 +501,9 @@ window.ImportacaoController = (function() {
             dadosEstruturados.cicloFinanceiro.pme = ciclo.pme || 30;
             dadosEstruturados.cicloFinanceiro.pmp = ciclo.pmp || 30;
 
-            adicionarLogImportacao(`✓ Ciclo financeiro mapeado - PMR: ${ciclo.pmr}, PME: ${ciclo.pme}, PMP: ${ciclo.pmp}`, 'info');
+            adicionarLogImportacao(`✓ Ciclo financeiro mapeado. PMR: ${ciclo.pmr || 'N/A'}, PME: ${ciclo.pme || 'N/A'}, PMP: ${ciclo.pmp || 'N/A'}`, 'info');
+        } else {
+            adicionarLogImportacao('⚠️ Dados de ciclo financeiro ausentes na consolidação SPED.', 'warning');
         }
 
         // Armazenar dados validados globalmente
@@ -506,6 +515,7 @@ window.ImportacaoController = (function() {
         // Remover duplicações visuais
         removerDuplicacoesCampos();
 
+        adicionarLogImportacao('✅ Mapeamento de dados SPED para interface concluído.', 'success');
         adicionarLogImportacao('✅ Dados integrados com sucesso ao simulador!', 'success');
         adicionarLogImportacao('🎯 Formulário do simulador preenchido automaticamente', 'success');
     }
@@ -568,22 +578,45 @@ window.ImportacaoController = (function() {
     /**
      * Remove duplicações de campos visuais
      */
-    function removerDuplicacoesCampos() {
-        // Ocultar campos duplicados de margem se existirem
-        const margensExtras = document.querySelectorAll('[id*="margem"]:not(#margem):not(#margem-operacional-calc)');
-        margensExtras.forEach(campo => {
-            if (campo.id !== 'margem' && campo.id !== 'margem-operacional-calc') {
-                campo.closest('.form-group')?.style.setProperty('display', 'none');
+    function removerDuplicacoesCampos(dadosForamImportados) {
+        // Helper to set display style
+        const setFieldDisplay = (elementId, displayValue) => {
+            const element = document.getElementById(elementId);
+            if (element) {
+                const formGroup = element.closest('.form-group');
+                if (formGroup) {
+                    formGroup.style.setProperty('display', displayValue, 'important');
+                }
             }
-        });
+        };
 
-        // Ocultar faturamentos duplicados
-        const faturamentosExtras = document.querySelectorAll('[id*="faturamento"]:not(#faturamento)');
-        faturamentosExtras.forEach(campo => {
-            if (campo.id !== 'faturamento') {
-                campo.closest('.form-group')?.style.setProperty('display', 'none');
-            }
-        });
+        if (!dadosForamImportados) {
+            // If no SPED data was successfully integrated for key sections, ensure manual fields are visible.
+            setFieldDisplay('faturamento', 'block');
+            setFieldDisplay('margem', 'block');
+            adicionarLogImportacao('ℹ️ Campos manuais de Faturamento e Margem (Dados da Empresa) mantidos visíveis pois dados SPED correspondentes não foram totalmente processados.', 'info');
+            return;
+        }
+
+        // Hide "Faturamento Mensal" under "Dados da Empresa" if "Receita Bruta Mensal" (Dados Financeiros) is populated by SPED
+        const campoReceitaBruta = document.getElementById('receita-bruta');
+        if (campoReceitaBruta && campoReceitaBruta.value && campoReceitaBruta.classList.contains('sped-data')) {
+            setFieldDisplay('faturamento', 'none');
+            adicionarLogImportacao('✓ Campo duplicado "Faturamento Mensal" (Dados da Empresa) oculto. Usar "Receita Bruta Mensal" (Dados Financeiros).', 'info');
+        } else {
+            // Ensure it's visible if the condition isn't met (e.g., receita-bruta not from SPED)
+            setFieldDisplay('faturamento', 'block');
+        }
+
+        // Hide "Margem Operacional (%)" under "Dados da Empresa" if "Margem Operacional (%)" in "Dados Financeiros" is populated by SPED
+        const campoMargemCalc = document.getElementById('margem-operacional-calc');
+        if (campoMargemCalc && campoMargemCalc.value && campoMargemCalc.classList.contains('sped-data')) {
+            setFieldDisplay('margem', 'none');
+            adicionarLogImportacao('✓ Campo duplicado "Margem Operacional (%)" (Dados da Empresa) oculto. Usar "Margem Operacional (%)" (Dados Financeiros).', 'info');
+        } else {
+            // Ensure it's visible if the condition isn't met
+            setFieldDisplay('margem', 'block');
+        }
     }
 
     /**

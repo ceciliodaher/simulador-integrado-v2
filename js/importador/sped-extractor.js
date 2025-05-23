@@ -405,50 +405,65 @@ window.SpedExtractor = (function() {
         let creditosCOFINS = 0;
 
         try {
-            // Processar receitas (A100)
+            // Faturamento from A100 (remains the same)
             if (spedContrib.registros.A100) {
                 spedContrib.registros.A100.forEach(registro => {
-                    const valorReceita = parseFloat(registro.VL_REC_BRT) || 0;
+                    const valorReceita = parseFloat(registro.VL_REC_BRT) || 0; // Assuming VL_REC_BRT is the correct field based on parser
                     faturamentoPisCofins += valorReceita;
                 });
             }
+            log.push(`     Receita Bruta (SPED Contrib A100): R$ ${faturamentoPisCofins.toFixed(2)}`);
 
-            // Processar débitos PIS/COFINS (M100, M200)
-            if (spedContrib.registros.M100) {
-                spedContrib.registros.M100.forEach(registro => {
-                    const valorPIS = parseFloat(registro.VL_TOT_CONT_NC_PER) || 0;
-                    debitosPIS += valorPIS;
-                });
-            }
 
+            // PIS Debits from M200
             if (spedContrib.registros.M200) {
                 spedContrib.registros.M200.forEach(registro => {
-                    const valorCOFINS = parseFloat(registro.VL_TOT_CONT_NC_PER) || 0;
-                    debitosCOFINS += valorCOFINS;
+                    debitosPIS += (parseFloat(registro.VL_TOT_CONT_NC_PER) || 0);
+                    debitosPIS += (parseFloat(registro.VL_TOT_CONT_CUM_PER) || 0);
                 });
+                log.push(`     PIS Debits (M200): R$ ${debitosPIS.toFixed(2)}`);
             }
 
-            // Processar créditos (C100, C170)
-            if (spedContrib.registros.C100) {
-                spedContrib.registros.C100.forEach(registro => {
-                    const creditoPIS = parseFloat(registro.VL_CRED_PIS) || 0;
-                    const creditoCOFINS = parseFloat(registro.VL_CRED_COFINS) || 0;
-                    
-                    creditosPIS += creditoPIS;
-                    creditosCOFINS += creditoCOFINS;
+            // COFINS Debits from M600
+            if (spedContrib.registros.M600) {
+                spedContrib.registros.M600.forEach(registro => {
+                    debitosCOFINS += (parseFloat(registro.VL_TOT_CONT_NC_PER) || 0);
+                    debitosCOFINS += (parseFloat(registro.VL_TOT_CONT_CUM_PER) || 0);
                 });
+                log.push(`     COFINS Debits (M600): R$ ${debitosCOFINS.toFixed(2)}`);
             }
 
-            // Atualizar composição
+            // PIS Credits from M100
+            if (spedContrib.registros.M100) {
+                spedContrib.registros.M100.forEach(registro => {
+                    creditosPIS += parseFloat(registro.VL_CRED) || 0;
+                });
+                log.push(`     PIS Credits (M100): R$ ${creditosPIS.toFixed(2)}`);
+            }
+            
+            // (Optional but good for completeness) PIS Credits from C170 if M100 is not exhaustive
+            // This part can be added if M100 doesn't capture all document-level credits.
+            // For now, M100 is the primary source for consolidated credits.
+
+            // COFINS Credits from M500
+            if (spedContrib.registros.M500) { // Assuming M500 is for COFINS credits, similar to M100 for PIS
+                spedContrib.registros.M500.forEach(registro => {
+                    creditosCOFINS += parseFloat(registro.VL_CRED) || 0;
+                });
+                log.push(`     COFINS Credits (M500): R$ ${creditosCOFINS.toFixed(2)}`);
+            }
+            // (Optional but good for completeness) COFINS Credits from C170
+
+            // Update composicao object
             composicao.faturamentoTotal = Math.max(composicao.faturamentoTotal, faturamentoPisCofins);
-            composicao.debitos.pis = debitosPIS;
-            composicao.creditos.pis = creditosPIS;
-            composicao.debitos.cofins = debitosCOFINS;
-            composicao.creditos.cofins = creditosCOFINS;
-            composicao.fonte.push('SPED Contribuições');
-
-            log.push(`     💼 PIS: Débitos R$ ${debitosPIS.toFixed(2)}, Créditos R$ ${creditosPIS.toFixed(2)}`);
-            log.push(`     💼 COFINS: Débitos R$ ${debitosCOFINS.toFixed(2)}, Créditos R$ ${creditosCOFINS.toFixed(2)}`);
+            composicao.debitos.pis += debitosPIS; // Use += in case other SPEDs contribute
+            composicao.creditos.pis += creditosPIS;
+            composicao.debitos.cofins += debitosCOFINS;
+            composicao.creditos.cofins += creditosCOFINS;
+            
+            if (!composicao.fonte.includes('SPED Contribuições')) {
+                composicao.fonte.push('SPED Contribuições');
+            }
 
         } catch (erro) {
             log.push(`     ❌ Erro ao processar SPED Contribuições: ${erro.message}`);
@@ -723,8 +738,15 @@ window.SpedExtractor = (function() {
             dadosFinanceiros.custos.custoTotal = faturamentoBase * 0.60; // 60% CMV típico
             dadosFinanceiros.despesas.despesasOperacionais = faturamentoBase * 0.20; // 20% despesas
 
-            dadosFinanceiros.observacoes.push('Dados financeiros estimados baseados no faturamento tributário');
-            log.push(`     📊 Dados estimados - Base: R$ ${faturamentoBase.toFixed(2)}`);
+            log.push(`     ⚠️ Dados financeiros DETALHADOS estimados (ECF/ECD info ausente/incompleta).`);
+            log.push(`        Estimativa baseada em Faturamento Total: R$ ${faturamentoBase.toFixed(2)}`);
+            log.push(`        Receita Líquida Estimada: R$ ${dadosFinanceiros.receitas.receitaLiquida.toFixed(2)}`);
+            log.push(`        Custo Total Estimado: R$ ${dadosFinanceiros.custos.custoTotal.toFixed(2)}`);
+            log.push(`        Despesas Operacionais Estimadas: R$ ${dadosFinanceiros.despesas.despesasOperacionais.toFixed(2)}`);
+            dadosFinanceiros.observacoes.push('Dados financeiros detalhados (Receita Líquida, Custos, Despesas) foram estimados baseados no faturamento tributário total, pois informações específicas de ECF/ECD não estavam disponíveis ou completas.');
+        } else {
+            log.push('     ⚠️ Estimativa de dados financeiros não pôde ser realizada: Faturamento base é zero.');
+            dadosFinanceiros.observacoes.push('Estimativa de dados financeiros detalhados falhou pois o faturamento base não pôde ser determinado dos arquivos SPED.');
         }
     }
 
