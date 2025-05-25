@@ -507,19 +507,19 @@ const SpedParser = (function() {
     /**
      * Converte string para valor monetário
      */
-    function converterValorMonetario(valor) {
-        if (!valor || valor === '') return 0;
+    // function converterValorMonetario(valor) { // Replaced by parseValorMonetario
+    //     if (!valor || valor === '') return 0;
         
-        try {
-            // Remove espaços e substitui vírgula por ponto
-            const valorLimpo = valor.toString().replace(/\s/g, '').replace(',', '.');
-            const numero = parseFloat(valorLimpo);
-            return isNaN(numero) ? 0 : numero;
-        } catch (erro) {
-            console.warn('Erro ao converter valor monetário:', valor, erro);
-            return 0;
-        }
-    }
+    //     try {
+    //         // Remove espaços e substitui vírgula por ponto
+    //         const valorLimpo = valor.toString().replace(/\s/g, '').replace(',', '.');
+    //         const numero = parseFloat(valorLimpo);
+    //         return isNaN(numero) ? 0 : numero;
+    //     } catch (erro) {
+    //         console.warn('Erro ao converter valor monetário:', valor, erro);
+    //         return 0;
+    //     }
+    // }
 
     /**
      * Determina o tipo de SPED baseado no conteúdo E nome do arquivo
@@ -1150,7 +1150,7 @@ const SpedParser = (function() {
             categoria: 'icms',
             codigoAjOuInf: validarCampo(campos, 2),
             descrCompl: validarCampo(campos, 3),
-            valorAjuste: converterValorMonetario(validarCampo(campos, 4, '0'))
+            valorAjuste: parseValorMonetario(validarCampo(campos, 4, '0'))
         };
     }
     
@@ -1189,16 +1189,16 @@ const SpedParser = (function() {
             return {
                 tipo: 'debito',
                 categoria: 'icms',
-                valorTotalDebitos: converterValorMonetario(validarCampo(campos, 2, '0')), // ✅ Corrigido: índice 2
-                valorAjDebitos: converterValorMonetario(validarCampo(campos, 3, '0')),
-                valorEstornoCreditos: converterValorMonetario(validarCampo(campos, 4, '0')),
-                valorTotalCreditos: converterValorMonetario(validarCampo(campos, 6, '0')), // ✅ Corrigido: índice 6
-                valorAjCreditos: converterValorMonetario(validarCampo(campos, 7, '0')),
-                valorEstornoDebitos: converterValorMonetario(validarCampo(campos, 8, '0')),
-                valorSaldoCredorAnt: converterValorMonetario(validarCampo(campos, 9, '0')),
-                valorSaldoApurado: converterValorMonetario(validarCampo(campos, 10, '0')),
-                valorDebitoEspecial: converterValorMonetario(validarCampo(campos, 11, '0')),
-                valorSaldoAPagar: converterValorMonetario(validarCampo(campos, 12, '0'))
+                valorTotalDebitos: parseValorMonetario(validarCampo(campos, 2, '0')), // ✅ Corrigido: índice 2
+                valorAjDebitos: parseValorMonetario(validarCampo(campos, 3, '0')),
+                valorEstornoCreditos: parseValorMonetario(validarCampo(campos, 4, '0')),
+                valorTotalCreditos: parseValorMonetario(validarCampo(campos, 6, '0')), // ✅ Corrigido: índice 6
+                valorAjCreditos: parseValorMonetario(validarCampo(campos, 7, '0')),
+                valorEstornoDebitos: parseValorMonetario(validarCampo(campos, 8, '0')),
+                valorSaldoCredorAnt: parseValorMonetario(validarCampo(campos, 9, '0')),
+                valorSaldoApurado: parseValorMonetario(validarCampo(campos, 10, '0')),
+                valorDebitoEspecial: parseValorMonetario(validarCampo(campos, 11, '0')),
+                valorSaldoAPagar: parseValorMonetario(validarCampo(campos, 12, '0'))
             };
         } catch (erro) {
             console.warn('Erro ao processar registro E110:', erro.message);
@@ -1213,7 +1213,7 @@ const SpedParser = (function() {
             categoria: 'icms',
             codAjApur: validarCampo(campos, 2),
             descrCompl: validarCampo(campos, 3),
-            valorAjuste: converterValorMonetario(validarCampo(campos, 4, '0'))
+            valorAjuste: parseValorMonetario(validarCampo(campos, 4, '0'))
         };
     }
 
@@ -1223,7 +1223,7 @@ const SpedParser = (function() {
             tipo: 'obrigacao',
             categoria: 'icms',
             codOr: validarCampo(campos, 2),
-            valorOr: converterValorMonetario(validarCampo(campos, 3, '0')),
+            valorOr: parseValorMonetario(validarCampo(campos, 3, '0')),
             dataVcto: validarCampo(campos, 4),
             codRec: validarCampo(campos, 5)
         };
@@ -1234,9 +1234,9 @@ const SpedParser = (function() {
         return {
             tipo: 'debito',
             categoria: 'ipi',
-            valorTotalDebitos: converterValorMonetario(validarCampo(campos, 2, '0')),  // CORRIGIDO: campo 2, não 4
-            valorTotalCreditos: converterValorMonetario(validarCampo(campos, 3, '0')),  // CORRIGIDO: campo 3, não 5
-            valorTotalAPagar: converterValorMonetario(validarCampo(campos, 10, '0'))    // CORRIGIDO: campo 10, não 12
+            valorTotalDebitos: parseValorMonetario(validarCampo(campos, 2, '0')),  // CORRIGIDO: campo 2, não 4
+            valorTotalCreditos: parseValorMonetario(validarCampo(campos, 3, '0')),  // CORRIGIDO: campo 3, não 5
+            valorTotalAPagar: parseValorMonetario(validarCampo(campos, 10, '0'))    // CORRIGIDO: campo 10, não 12
         };
     }
 
@@ -1246,7 +1246,7 @@ const SpedParser = (function() {
             tipo: 'ajuste',
             categoria: 'ipi',
             indAj: validarCampo(campos, 2),
-            valorAj: converterValorMonetario(validarCampo(campos, 3, '0')),
+            valorAj: parseValorMonetario(validarCampo(campos, 3, '0')),
             codAj: validarCampo(campos, 4)
         };
     }
@@ -1258,7 +1258,7 @@ const SpedParser = (function() {
             categoria: 'ipi',
             codInfAd: validarCampo(campos, 2),
             txtCompl: validarCampo(campos, 3),
-            qtdRef: converterValorMonetario(validarCampo(campos, 4, '0'))
+            qtdRef: parseValorMonetario(validarCampo(campos, 4, '0'))
         };
     }
 
@@ -1268,9 +1268,9 @@ const SpedParser = (function() {
             tipo: 'inventario_abertura',
             codItem: validarCampo(campos, 2),
             unid: validarCampo(campos, 3),
-            qtd: converterValorMonetario(validarCampo(campos, 4, '0')),
-            valorUnit: converterValorMonetario(validarCampo(campos, 5, '0')),
-            valorItem: converterValorMonetario(validarCampo(campos, 6, '0'))
+            qtd: parseValorMonetario(validarCampo(campos, 4, '0')),
+            valorUnit: parseValorMonetario(validarCampo(campos, 5, '0')),
+            valorItem: parseValorMonetario(validarCampo(campos, 6, '0'))
         };
     }
 
@@ -1280,9 +1280,9 @@ const SpedParser = (function() {
             tipo: 'inventario_info',
             codItem: validarCampo(campos, 2),
             unid: validarCampo(campos, 3),
-            qtd: converterValorMonetario(validarCampo(campos, 4, '0')),
-            valorUnit: converterValorMonetario(validarCampo(campos, 5, '0')),
-            valorItem: converterValorMonetario(validarCampo(campos, 6, '0'))
+            qtd: parseValorMonetario(validarCampo(campos, 4, '0')),
+            valorUnit: parseValorMonetario(validarCampo(campos, 5, '0')),
+            valorItem: parseValorMonetario(validarCampo(campos, 6, '0'))
         };
     }
 
@@ -1405,7 +1405,7 @@ const SpedParser = (function() {
             indEmit: validarCampo(campos, 3),
             codPart: validarCampo(campos, 4),
             codSit: validarCampo(campos, 5),
-            valorOperacao: converterValorMonetario(validarCampo(campos, 6, '0'))
+            valorOperacao: parseValorMonetario(validarCampo(campos, 6, '0'))
         };
     }
 
@@ -1416,7 +1416,7 @@ const SpedParser = (function() {
             categoria: 'operacao',
             codInf: validarCampo(campos, 2),
             txtCompl: validarCampo(campos, 3),
-            valorItem: converterValorMonetario(validarCampo(campos, 4, '0'))
+            valorItem: parseValorMonetario(validarCampo(campos, 4, '0'))
         };
     }
 
@@ -1441,11 +1441,11 @@ const SpedParser = (function() {
             codSit: validarCampo(campos, 6),
             numDoc: validarCampo(campos, 7),
             dataDoc: validarCampo(campos, 8),
-            valorDoc: converterValorMonetario(validarCampo(campos, 9, '0')),
-            valorPis: converterValorMonetario(validarCampo(campos, 10, '0')),
-            valorCofins: converterValorMonetario(validarCampo(campos, 11, '0')),
+            valorDoc: parseValorMonetario(validarCampo(campos, 9, '0')),
+            valorPis: parseValorMonetario(validarCampo(campos, 10, '0')),
+            valorCofins: parseValorMonetario(validarCampo(campos, 11, '0')),
             natBcCred: validarCampo(campos, 12),
-            valorTotal: converterValorMonetario(validarCampo(campos, 9, '0')),
+            valorTotal: parseValorMonetario(validarCampo(campos, 9, '0')),
             dataEmissao: validarCampo(campos, 8),
             modelo: validarCampo(campos, 5),
             situacao: validarCampo(campos, 6)
@@ -1460,7 +1460,7 @@ const SpedParser = (function() {
             codMod: validarCampo(campos, 2),
             dataIniOper: validarCampo(campos, 3),
             dataFinOper: validarCampo(campos, 4),
-            valorTotRec: converterValorMonetario(validarCampo(campos, 5, '0')),
+            valorTotRec: parseValorMonetario(validarCampo(campos, 5, '0')),
             codCta: validarCampo(campos, 6),
             descrCompl: validarCampo(campos, 7)
         };
@@ -1473,17 +1473,17 @@ const SpedParser = (function() {
             categoria: 'pis_cofins',
             cstPis: validarCampo(campos, 2),
             codCred: validarCampo(campos, 3),
-            valorBc: converterValorMonetario(validarCampo(campos, 4, '0')),
-            aliqPis: converterValorMonetario(validarCampo(campos, 5, '0')),
-            quantBcPis: converterValorMonetario(validarCampo(campos, 6, '0')),
-            aliqPisQuant: converterValorMonetario(validarCampo(campos, 7, '0')),
-            valorPis: converterValorMonetario(validarCampo(campos, 8, '0')),
+            valorBc: parseValorMonetario(validarCampo(campos, 4, '0')),
+            aliqPis: parseValorMonetario(validarCampo(campos, 5, '0')),
+            quantBcPis: parseValorMonetario(validarCampo(campos, 6, '0')),
+            aliqPisQuant: parseValorMonetario(validarCampo(campos, 7, '0')),
+            valorPis: parseValorMonetario(validarCampo(campos, 8, '0')),
             cstCofins: validarCampo(campos, 9),
-            valorBcCofins: converterValorMonetario(validarCampo(campos, 10, '0')),
-            aliqCofins: converterValorMonetario(validarCampo(campos, 11, '0')),
-            quantBcCofins: converterValorMonetario(validarCampo(campos, 12, '0')),
-            aliqCofinsQuant: converterValorMonetario(validarCampo(campos, 13, '0')),
-            valorCofins: converterValorMonetario(validarCampo(campos, 14, '0')),
+            valorBcCofins: parseValorMonetario(validarCampo(campos, 10, '0')),
+            aliqCofins: parseValorMonetario(validarCampo(campos, 11, '0')),
+            quantBcCofins: parseValorMonetario(validarCampo(campos, 12, '0')),
+            aliqCofinsQuant: parseValorMonetario(validarCampo(campos, 13, '0')),
+            valorCofins: parseValorMonetario(validarCampo(campos, 14, '0')),
             codCta: validarCampo(campos, 15),
             descrCompl: validarCampo(campos, 16)
         };
@@ -1496,11 +1496,11 @@ const SpedParser = (function() {
             categoria: 'pis',
             cstPis: validarCampo(campos, 2),
             codCred: validarCampo(campos, 3),
-            valorBc: converterValorMonetario(validarCampo(campos, 4, '0')),
-            aliqPis: converterValorMonetario(validarCampo(campos, 5, '0')),
-            quantBcPis: converterValorMonetario(validarCampo(campos, 6, '0')),
-            aliqPisQuant: converterValorMonetario(validarCampo(campos, 7, '0')),
-            valorPis: converterValorMonetario(validarCampo(campos, 8, '0')),
+            valorBc: parseValorMonetario(validarCampo(campos, 4, '0')),
+            aliqPis: parseValorMonetario(validarCampo(campos, 5, '0')),
+            quantBcPis: parseValorMonetario(validarCampo(campos, 6, '0')),
+            aliqPisQuant: parseValorMonetario(validarCampo(campos, 7, '0')),
+            valorPis: parseValorMonetario(validarCampo(campos, 8, '0')),
             codCta: validarCampo(campos, 9),
             descrCompl: validarCampo(campos, 10)
         };
@@ -1528,10 +1528,10 @@ const SpedParser = (function() {
             codSit: validarCampo(campos, 6),
             numDoc: validarCampo(campos, 7),
             dataDoc: validarCampo(campos, 8),
-            valorDoc: converterValorMonetario(validarCampo(campos, 9, '0')),
+            valorDoc: parseValorMonetario(validarCampo(campos, 9, '0')),
             indPgto: validarCampo(campos, 10),
-            valorDesc: converterValorMonetario(validarCampo(campos, 11, '0')),
-            valorServ: converterValorMonetario(validarCampo(campos, 12, '0'))
+            valorDesc: parseValorMonetario(validarCampo(campos, 11, '0')),
+            valorServ: parseValorMonetario(validarCampo(campos, 12, '0'))
         };
     }
 
@@ -1541,9 +1541,9 @@ const SpedParser = (function() {
             tipo: 'credito_detalhe',
             categoria: 'pis',
             indNatPJ: validarCampo(campos, 2),
-            valorBcPis: converterValorMonetario(validarCampo(campos, 3, '0')),
-            aliqPis: converterValorMonetario(validarCampo(campos, 4, '0')),
-            valorPis: converterValorMonetario(validarCampo(campos, 5, '0')),
+            valorBcPis: parseValorMonetario(validarCampo(campos, 3, '0')),
+            aliqPis: parseValorMonetario(validarCampo(campos, 4, '0')),
+            valorPis: parseValorMonetario(validarCampo(campos, 5, '0')),
             codCred: validarCampo(campos, 6)
         };
     }
@@ -1554,9 +1554,9 @@ const SpedParser = (function() {
             tipo: 'credito_detalhe',
             categoria: 'cofins',
             indNatPJ: validarCampo(campos, 2),
-            valorBcCofins: converterValorMonetario(validarCampo(campos, 3, '0')),
-            aliqCofins: converterValorMonetario(validarCampo(campos, 4, '0')),
-            valorCofins: converterValorMonetario(validarCampo(campos, 5, '0')),
+            valorBcCofins: parseValorMonetario(validarCampo(campos, 3, '0')),
+            aliqCofins: parseValorMonetario(validarCampo(campos, 4, '0')),
+            valorCofins: parseValorMonetario(validarCampo(campos, 5, '0')),
             codCred: validarCampo(campos, 6)
         };
     }
@@ -1580,19 +1580,19 @@ const SpedParser = (function() {
             codPart: validarCampo(campos, 3),
             codItem: validarCampo(campos, 4),
             dataOper: validarCampo(campos, 5),
-            valorOper: converterValorMonetario(validarCampo(campos, 6, '0')),
+            valorOper: parseValorMonetario(validarCampo(campos, 6, '0')),
             cstPis: validarCampo(campos, 7),
-            valorBcPis: converterValorMonetario(validarCampo(campos, 8, '0')),
-            aliqPisPerc: converterValorMonetario(validarCampo(campos, 9, '0')),
-            valorPis: converterValorMonetario(validarCampo(campos, 10, '0')),
+            valorBcPis: parseValorMonetario(validarCampo(campos, 8, '0')),
+            aliqPisPerc: parseValorMonetario(validarCampo(campos, 9, '0')),
+            valorPis: parseValorMonetario(validarCampo(campos, 10, '0')),
             cstCofins: validarCampo(campos, 11),
-            valorBcCofins: converterValorMonetario(validarCampo(campos, 12, '0')),
-            aliqCofinsPerc: converterValorMonetario(validarCampo(campos, 13, '0')),
-            valorCofins: converterValorMonetario(validarCampo(campos, 14, '0')),
+            valorBcCofins: parseValorMonetario(validarCampo(campos, 12, '0')),
+            aliqCofinsPerc: parseValorMonetario(validarCampo(campos, 13, '0')),
+            valorCofins: parseValorMonetario(validarCampo(campos, 14, '0')),
             natBcCred: validarCampo(campos, 15),
             indOrigCred: validarCampo(campos, 16),
             codCred: validarCampo(campos, 17),
-            valorCredDisp: converterValorMonetario(validarCampo(campos, 18, '0'))
+            valorCredDisp: parseValorMonetario(validarCampo(campos, 18, '0'))
         };
     }
 
@@ -1615,9 +1615,9 @@ const SpedParser = (function() {
             identBemImob: validarCampo(campos, 3),
             indOrigCred: validarCampo(campos, 4),
             indUtilBemImob: validarCampo(campos, 5),
-            valorOperacao: converterValorMonetario(validarCampo(campos, 6, '0')),
-            parcCredito: converterValorMonetario(validarCampo(campos, 7, '0')),
-            valorCredito: converterValorMonetario(validarCampo(campos, 8, '0')),
+            valorOperacao: parseValorMonetario(validarCampo(campos, 6, '0')),
+            parcCredito: parseValorMonetario(validarCampo(campos, 7, '0')),
+            valorCredito: parseValorMonetario(validarCampo(campos, 8, '0')),
             dataOperacao: validarCampo(campos, 9)
         };
     }
@@ -1638,10 +1638,10 @@ const SpedParser = (function() {
             tipo: 'atividade_imobiliaria',
             categoria: 'credito',
             natBcCred: validarCampo(campos, 2),
-            valorBcPis: converterValorMonetario(validarCampo(campos, 3, '0')),
-            valorPis: converterValorMonetario(validarCampo(campos, 4, '0')),
-            valorBcCofins: converterValorMonetario(validarCampo(campos, 5, '0')),
-            valorCofins: converterValorMonetario(validarCampo(campos, 6, '0')),
+            valorBcPis: parseValorMonetario(validarCampo(campos, 3, '0')),
+            valorPis: parseValorMonetario(validarCampo(campos, 4, '0')),
+            valorBcCofins: parseValorMonetario(validarCampo(campos, 5, '0')),
+            valorCofins: parseValorMonetario(validarCampo(campos, 6, '0')),
             infCompl: validarCampo(campos, 7)
         };
     }
@@ -1662,11 +1662,11 @@ const SpedParser = (function() {
             tipo: 'credito_presumido_estoque',
             categoria: 'credito',
             natBcCred: validarCampo(campos, 2),
-            valorEstoque: converterValorMonetario(validarCampo(campos, 3, '0')),
-            valorBcPis: converterValorMonetario(validarCampo(campos, 4, '0')),
-            valorPis: converterValorMonetario(validarCampo(campos, 5, '0')),
-            valorBcCofins: converterValorMonetario(validarCampo(campos, 6, '0')),
-            valorCofins: converterValorMonetario(validarCampo(campos, 7, '0'))
+            valorEstoque: parseValorMonetario(validarCampo(campos, 3, '0')),
+            valorBcPis: parseValorMonetario(validarCampo(campos, 4, '0')),
+            valorPis: parseValorMonetario(validarCampo(campos, 5, '0')),
+            valorBcCofins: parseValorMonetario(validarCampo(campos, 6, '0')),
+            valorCofins: parseValorMonetario(validarCampo(campos, 7, '0'))
         };
     }
 
@@ -1682,8 +1682,8 @@ const SpedParser = (function() {
             numCont: validarCampo(campos, 6),
             cpfCnpjAdq: validarCampo(campos, 7),
             dataOper: validarCampo(campos, 8),
-            valorTotalVenda: converterValorMonetario(validarCampo(campos, 9, '0')),
-            valorRecebido: converterValorMonetario(validarCampo(campos, 10, '0'))
+            valorTotalVenda: parseValorMonetario(validarCampo(campos, 9, '0')),
+            valorRecebido: parseValorMonetario(validarCampo(campos, 10, '0'))
         };
     }
 
@@ -1692,14 +1692,14 @@ const SpedParser = (function() {
         return {
             tipo: 'operacao_cartao_credito',
             categoria: 'receita',
-            valorOperacao: converterValorMonetario(validarCampo(campos, 2, '0')),
-            valorDesconto: converterValorMonetario(validarCampo(campos, 3, '0')),
-            valorBcPis: converterValorMonetario(validarCampo(campos, 4, '0')),
-            aliqPis: converterValorMonetario(validarCampo(campos, 5, '0')),
-            valorPis: converterValorMonetario(validarCampo(campos, 6, '0')),
-            valorBcCofins: converterValorMonetario(validarCampo(campos, 7, '0')),
-            aliqCofins: converterValorMonetario(validarCampo(campos, 8, '0')),
-            valorCofins: converterValorMonetario(validarCampo(campos, 9, '0'))
+            valorOperacao: parseValorMonetario(validarCampo(campos, 2, '0')),
+            valorDesconto: parseValorMonetario(validarCampo(campos, 3, '0')),
+            valorBcPis: parseValorMonetario(validarCampo(campos, 4, '0')),
+            aliqPis: parseValorMonetario(validarCampo(campos, 5, '0')),
+            valorPis: parseValorMonetario(validarCampo(campos, 6, '0')),
+            valorBcCofins: parseValorMonetario(validarCampo(campos, 7, '0')),
+            aliqCofins: parseValorMonetario(validarCampo(campos, 8, '0')),
+            valorCofins: parseValorMonetario(validarCampo(campos, 9, '0'))
         };
     }
 
@@ -1709,9 +1709,9 @@ const SpedParser = (function() {
             tipo: 'cide',
             categoria: 'contribuicao',
             codCide: validarCampo(campos, 2),
-            valorBcCide: converterValorMonetario(validarCampo(campos, 3, '0')),
-            aliqCide: converterValorMonetario(validarCampo(campos, 4, '0')),
-            valorCide: converterValorMonetario(validarCampo(campos, 5, '0'))
+            valorBcCide: parseValorMonetario(validarCampo(campos, 3, '0')),
+            aliqCide: parseValorMonetario(validarCampo(campos, 4, '0')),
+            valorCide: parseValorMonetario(validarCampo(campos, 5, '0'))
         };
     }
 
@@ -1730,15 +1730,15 @@ const SpedParser = (function() {
         return {
             tipo: 'operacao_exterior',
             categoria: 'credito',
-            valorReceita: converterValorMonetario(validarCampo(campos, 2, '0')),
+            valorReceita: parseValorMonetario(validarCampo(campos, 2, '0')),
             cstPis: validarCampo(campos, 3),
-            valorBcPis: converterValorMonetario(validarCampo(campos, 4, '0')),
-            aliqPis: converterValorMonetario(validarCampo(campos, 5, '0')),
-            valorPis: converterValorMonetario(validarCampo(campos, 6, '0')),
+            valorBcPis: parseValorMonetario(validarCampo(campos, 4, '0')),
+            aliqPis: parseValorMonetario(validarCampo(campos, 5, '0')),
+            valorPis: parseValorMonetario(validarCampo(campos, 6, '0')),
             cstCofins: validarCampo(campos, 7),
-            valorBcCofins: converterValorMonetario(validarCampo(campos, 8, '0')),
-            aliqCofins: converterValorMonetario(validarCampo(campos, 9, '0')),
-            valorCofins: converterValorMonetario(validarCampo(campos, 10, '0'))
+            valorBcCofins: parseValorMonetario(validarCampo(campos, 8, '0')),
+            aliqCofins: parseValorMonetario(validarCampo(campos, 9, '0')),
+            valorCofins: parseValorMonetario(validarCampo(campos, 10, '0'))
         };
     }
 
@@ -1758,15 +1758,17 @@ const SpedParser = (function() {
             tipo: 'credito',
             categoria: 'pis',
             codCredPres: validarCampo(campos, 2),
-            valorCredito: converterValorMonetario(validarCampo(campos, 3, '0')),
-            perCredPres: converterValorMonetario(validarCampo(campos, 4, '0')),
+            valorCredito: parseValorMonetario(validarCampo(campos, 3, '0')),
+            perCredPres: parseValorMonetario(validarCampo(campos, 4, '0')),
             origem: 'registro_m100'
         };
     }
 
     function parseRegistroM105(campos) {
-        if (!validarEstruturaRegistro(campos, 7)) { // ✅ Corrigido: M105 tem apenas 7 campos
-            console.warn('Registro M105 com estrutura insuficiente:', campos.length);
+        // Layout M105: REG, NAT_BC_CRED, CST_PIS, VL_BC_PIS_TOT, VL_BC_PIS_CUM, VL_BC_PIS_NC, VL_CRED_PIS_UTIL, VL_CRED_PIS_TRANS, COD_CTA
+        // Indices:      0,           1,       2,             3,             4,             5,                6,                 7,       8
+        if (!validarEstruturaRegistro(campos, 9)) { // M105 has 9 fields
+            console.warn('Registro M105 com estrutura insuficiente (esperado 9):', campos.length);
             return null;
         }
 
@@ -1774,12 +1776,15 @@ const SpedParser = (function() {
             return {
                 tipo: 'credito_detalhe',
                 categoria: 'pis',
-                natBcCred: validarCampo(campos, 2), // Natureza da BC do crédito
-                cstPis: validarCampo(campos, 3), // ✅ Corrigido: CST PIS (código do crédito)
-                valorBcPis: parseValorMonetario(validarCampo(campos, 4, '0')),
-                aliqPis: parseFloat(validarCampo(campos, 5, '0').replace(',', '.')) || 0,
-                valorCredito: parseValorMonetario(validarCampo(campos, 6, '0')), // ✅ Corrigido: campo 6 é o valor do crédito
-                codCta: validarCampo(campos, 7) // ✅ Corrigido: código da conta contábil
+                natBcCred: validarCampo(campos, 1), // Campo 02 - NAT_BC_CRED
+                cstPis: validarCampo(campos, 2),    // Campo 03 - CST_PIS
+                // VL_BC_PIS_TOT (Total Base de Cálculo) em campos[3]
+                // VL_BC_PIS_CUM (Base de Cálculo Cumulativa) em campos[4]
+                valorBcPis: parseValorMonetario(validarCampo(campos, 5, '0')), // Campo 06 - VL_BC_PIS_NC (Base de Cálculo Não Cumulativa)
+                // aliqPis: No direct aliquot field in M105, values are totals.
+                valorCredito: parseValorMonetario(validarCampo(campos, 6, '0')), // Campo 07 - VL_CRED_PIS_UTIL
+                valorCreditoTransferido: parseValorMonetario(validarCampo(campos, 7, '0')), // Campo 08 - VL_CRED_PIS_TRANS
+                codCta: validarCampo(campos, 8) // Campo 09 - COD_CTA
             };
         } catch (erro) {
             console.warn('Erro ao processar registro M105:', erro.message);
@@ -1793,7 +1798,7 @@ const SpedParser = (function() {
             tipo: 'ajuste',
             categoria: 'pis',
             indAjuste: validarCampo(campos, 2),
-            valorAjuste: converterValorMonetario(validarCampo(campos, 3, '0')),
+            valorAjuste: parseValorMonetario(validarCampo(campos, 3, '0')),
             codAjuste: validarCampo(campos, 4)
         };
     }
@@ -1805,7 +1810,7 @@ const SpedParser = (function() {
             categoria: 'pis',
             detalhamentoAjuste: validarCampo(campos, 2),
             codCred: validarCampo(campos, 3),
-            valorCredito: converterValorMonetario(validarCampo(campos, 4, '0'))
+            valorCredito: parseValorMonetario(validarCampo(campos, 4, '0'))
         };
     }
 
@@ -1815,14 +1820,14 @@ const SpedParser = (function() {
             return {
                 tipo: 'debito',
                 categoria: 'pis',
-                valorContribuicaoApurada: converterValorMonetario(validarCampo(campos, 5, '0')),
-                valorCredito: converterValorMonetario(validarCampo(campos, 6, '0')),
-                valorContribuicaoDevida: converterValorMonetario(validarCampo(campos, 7, '0')),
-                valorTotalRetencoes: converterValorMonetario(validarCampo(campos, 8, '0')),
-                valorTotalContribuicao: converterValorMonetario(validarCampo(campos, 9, '0')),
-                valorTotalDeducoes: converterValorMonetario(validarCampo(campos, 10, '0')),
-                valorContribuicaoAPagar: converterValorMonetario(validarCampo(campos, 11, '0')),
-                saldoCredorPeriodo: converterValorMonetario(validarCampo(campos, 12, '0'))
+                valorContribuicaoApurada: parseValorMonetario(validarCampo(campos, 5, '0')), // VL_TOT_CONT_NC_PER
+                valorCredito: parseValorMonetario(validarCampo(campos, 6, '0')), // VL_TOT_CRED_DESC_PER
+                valorContribuicaoDevida: parseValorMonetario(validarCampo(campos, 8, '0')), // VL_TOT_CONT_NC_DEV
+                valorTotalRetencoes: parseValorMonetario(validarCampo(campos, 9, '0')), // VL_RET_NC_PER
+                valorTotalContribuicao: parseValorMonetario(validarCampo(campos, 2, '0')), // VL_TOT_CONT_NC_PER_ANT (Campo 2: VL_PER_APUR_ANT) - Assuming this is for prior period's total. Or map to VL_TOT_DEB_APUR_PER (campo 4) if current period total debit is intended. Let's use campo 2 for now.
+                valorTotalDeducoes: parseValorMonetario(validarCampo(campos, 10, '0')), // VL_OUT_DED_NC_PER
+                valorContribuicaoAPagar: parseValorMonetario(validarCampo(campos, 11, '0')), // VL_CONT_NC_PAG
+                saldoCredorPeriodo: parseValorMonetario(validarCampo(campos, 12, '0'))
             };
         } catch (erro) {
             console.warn('Erro ao processar registro M200:', erro.message);
@@ -1837,7 +1842,7 @@ const SpedParser = (function() {
             categoria: 'pis',
             numCampo: validarCampo(campos, 2),
             codAj: validarCampo(campos, 3),
-            valorAjuste: converterValorMonetario(validarCampo(campos, 4, '0'))
+            valorAjuste: parseValorMonetario(validarCampo(campos, 4, '0'))
         };
     }
 
@@ -1847,8 +1852,8 @@ const SpedParser = (function() {
             tipo: 'detalhamento_consolidacao_pis',
             categoria: 'pis',
             codCont: validarCampo(campos, 2),
-            valorRec: converterValorMonetario(validarCampo(campos, 3, '0')),
-            valorContrib: converterValorMonetario(validarCampo(campos, 4, '0'))
+            valorRec: parseValorMonetario(validarCampo(campos, 3, '0')),
+            valorContrib: parseValorMonetario(validarCampo(campos, 4, '0'))
         };
     }
 
@@ -1858,7 +1863,7 @@ const SpedParser = (function() {
             tipo: 'demonstrativo_saldo_credor',
             categoria: 'pis',
             indAj: validarCampo(campos, 2),
-            valorAj: converterValorMonetario(validarCampo(campos, 3, '0')),
+            valorAj: parseValorMonetario(validarCampo(campos, 3, '0')),
             codAj: validarCampo(campos, 4)
         };
     }
@@ -1870,7 +1875,7 @@ const SpedParser = (function() {
             categoria: 'pis',
             numDoc: validarCampo(campos, 2),
             codItem: validarCampo(campos, 3),
-            valorAj: converterValorMonetario(validarCampo(campos, 4, '0'))
+            valorAj: parseValorMonetario(validarCampo(campos, 4, '0'))
         };
     }
 
@@ -1880,7 +1885,7 @@ const SpedParser = (function() {
             tipo: 'receita_nao_tributada',
             categoria: 'pis',
             cstPis: validarCampo(campos, 2),
-            valorTotRec: converterValorMonetario(validarCampo(campos, 3, '0')),
+            valorTotRec: parseValorMonetario(validarCampo(campos, 3, '0')),
             codCta: validarCampo(campos, 4)
         };
     }
@@ -1891,7 +1896,7 @@ const SpedParser = (function() {
             tipo: 'detalhamento_receita_nao_tributada',
             categoria: 'pis',
             natRec: validarCampo(campos, 2),
-            valorRec: converterValorMonetario(validarCampo(campos, 3, '0')),
+            valorRec: parseValorMonetario(validarCampo(campos, 3, '0')),
             codCta: validarCampo(campos, 4),
             descrCompl: validarCampo(campos, 5)
         };
@@ -1903,29 +1908,35 @@ const SpedParser = (function() {
             tipo: 'credito',
             categoria: 'cofins',
             codCredPres: validarCampo(campos, 2),
-            valorCredito: converterValorMonetario(validarCampo(campos, 3, '0')),
-            perCredPres: converterValorMonetario(validarCampo(campos, 4, '0')),
+            valorCredito: parseValorMonetario(validarCampo(campos, 3, '0')),
+            perCredPres: parseValorMonetario(validarCampo(campos, 4, '0')),
             origem: 'registro_m500'
         };
     }
 
     function parseRegistroM505(campos) {
-        if (!validarEstruturaRegistro(campos, 12)) return null;
+        // Layout M505: REG, NAT_BC_CRED, CST_COFINS, VL_BC_COFINS_TOT, VL_BC_COFINS_CUM, VL_BC_COFINS_NC, VL_CRED_COFINS_UTIL, VL_CRED_COFINS_TRANS, COD_CTA
+        // Indices:      0,           1,          2,                3,                4,                5,                   6,                    7,       8
+        if (!validarEstruturaRegistro(campos, 9)) { // M505 has 9 fields
+            console.warn('Registro M505 com estrutura insuficiente (esperado 9):', campos.length);
+            return null;
+        }
         try {
-            const baseCalculo = converterValorMonetario(validarCampo(campos, 6, '0'));
-            const aliquota = converterValorMonetario(validarCampo(campos, 7, '0'));
-            const valorCredito = converterValorMonetario(validarCampo(campos, 8, '0'));
+            // const baseCalculo = parseValorMonetario(validarCampo(campos, 6, '0')); // This was incorrect, campos[6] is credit value
+            // const aliquota = parseValorMonetario(validarCampo(campos, 7, '0')); // This was incorrect, campos[7] is transferred credit
+            // const valorCredito = parseValorMonetario(validarCampo(campos, 8, '0')); // This was incorrect, campos[8] is COD_CTA
             return {
                 tipo: 'credito_detalhe',
                 categoria: 'cofins',
-                codigoCredito: validarCampo(campos, 3),
-                indicadorCreditoOriundo: validarCampo(campos, 4),
-                valorOperacao: converterValorMonetario(validarCampo(campos, 5, '0')),
-                baseCalculoCredito: baseCalculo,
-                aliquotaCredito: aliquota,
-                valorCredito: valorCredito,
-                descricaoItemServico: validarCampo(campos, 9),
-                codigoContaContabil: validarCampo(campos, 10)
+                natBcCred: validarCampo(campos, 1), // Campo 02 - NAT_BC_CRED
+                cstCofins: validarCampo(campos, 2), // Campo 03 - CST_COFINS
+                // VL_BC_COFINS_TOT em campos[3]
+                // VL_BC_COFINS_CUM em campos[4]
+                valorBcCofins: parseValorMonetario(validarCampo(campos, 5, '0')), // Campo 06 - VL_BC_COFINS_NC
+                // aliquotaCredito: No direct aliquot field in M505
+                valorCredito: parseValorMonetario(validarCampo(campos, 6, '0')), // Campo 07 - VL_CRED_COFINS_UTIL
+                valorCreditoTransferido: parseValorMonetario(validarCampo(campos, 7, '0')), // Campo 08 - VL_CRED_COFINS_TRANS
+                codCta: validarCampo(campos, 8) // Campo 09 - COD_CTA
             };
         } catch (erro) {
             console.warn('Erro ao processar registro M505:', erro.message);
@@ -1939,7 +1950,7 @@ const SpedParser = (function() {
             tipo: 'ajuste',
             categoria: 'cofins',
             indAjuste: validarCampo(campos, 2),
-            valorAjuste: converterValorMonetario(validarCampo(campos, 3, '0')),
+            valorAjuste: parseValorMonetario(validarCampo(campos, 3, '0')),
             codAjuste: validarCampo(campos, 4)
         };
     }
@@ -1951,7 +1962,7 @@ const SpedParser = (function() {
             categoria: 'cofins',
             detalhamentoAjuste: validarCampo(campos, 2),
             codCred: validarCampo(campos, 3),
-            valorCredito: converterValorMonetario(validarCampo(campos, 4, '0'))
+            valorCredito: parseValorMonetario(validarCampo(campos, 4, '0'))
         };
     }
 
@@ -1961,14 +1972,14 @@ const SpedParser = (function() {
             return {
                 tipo: 'debito',
                 categoria: 'cofins',
-                valorContribuicaoApurada: converterValorMonetario(validarCampo(campos, 5, '0')),
-                valorCredito: converterValorMonetario(validarCampo(campos, 6, '0')),
-                valorContribuicaoDevida: converterValorMonetario(validarCampo(campos, 7, '0')),
-                valorTotalRetencoes: converterValorMonetario(validarCampo(campos, 8, '0')),
-                valorTotalContribuicao: converterValorMonetario(validarCampo(campos, 9, '0')),
-                valorTotalDeducoes: converterValorMonetario(validarCampo(campos, 10, '0')),
-                valorContribuicaoAPagar: converterValorMonetario(validarCampo(campos, 11, '0')),
-                saldoCredorPeriodo: converterValorMonetario(validarCampo(campos, 12, '0'))
+                valorContribuicaoApurada: parseValorMonetario(validarCampo(campos, 5, '0')), // VL_TOT_CONT_NC_PER
+                valorCredito: parseValorMonetario(validarCampo(campos, 6, '0')), // VL_TOT_CRED_DESC_PER
+                valorContribuicaoDevida: parseValorMonetario(validarCampo(campos, 8, '0')), // VL_TOT_CONT_NC_DEV
+                valorTotalRetencoes: parseValorMonetario(validarCampo(campos, 9, '0')), // VL_RET_NC_PER
+                valorTotalContribuicao: parseValorMonetario(validarCampo(campos, 2, '0')), // VL_PER_APUR_ANT (Campo 2: VL_PER_APUR_ANT) - Assuming this is for prior period's total. Or map to VL_TOT_DEB_APUR_PER (campo 4) if current period total debit is intended. Let's use campo 2 for now.
+                valorTotalDeducoes: parseValorMonetario(validarCampo(campos, 10, '0')), // VL_OUT_DED_NC_PER
+                valorContribuicaoAPagar: parseValorMonetario(validarCampo(campos, 11, '0')), // VL_CONT_NC_PAG
+                saldoCredorPeriodo: parseValorMonetario(validarCampo(campos, 12, '0'))
             };
         } catch (erro) {
             console.warn('Erro ao processar registro M600:', erro.message);
@@ -1983,7 +1994,7 @@ const SpedParser = (function() {
             categoria: 'cofins',
             numCampo: validarCampo(campos, 2),
             codAj: validarCampo(campos, 3),
-            valorAjuste: converterValorMonetario(validarCampo(campos, 4, '0'))
+            valorAjuste: parseValorMonetario(validarCampo(campos, 4, '0'))
         };
     }
 
@@ -1993,8 +2004,8 @@ const SpedParser = (function() {
             tipo: 'detalhamento_consolidacao_cofins',
             categoria: 'cofins',
             codCont: validarCampo(campos, 2),
-            valorRec: converterValorMonetario(validarCampo(campos, 3, '0')),
-            valorContrib: converterValorMonetario(validarCampo(campos, 4, '0'))
+            valorRec: parseValorMonetario(validarCampo(campos, 3, '0')),
+            valorContrib: parseValorMonetario(validarCampo(campos, 4, '0'))
         };
     }
 
@@ -2004,7 +2015,7 @@ const SpedParser = (function() {
             tipo: 'demonstrativo_saldo_credor',
             categoria: 'cofins',
             indAj: validarCampo(campos, 2),
-            valorAj: converterValorMonetario(validarCampo(campos, 3, '0')),
+            valorAj: parseValorMonetario(validarCampo(campos, 3, '0')),
             codAj: validarCampo(campos, 4)
         };
     }
@@ -2016,7 +2027,7 @@ const SpedParser = (function() {
             categoria: 'cofins',
             numDoc: validarCampo(campos, 2),
             codItem: validarCampo(campos, 3),
-            valorAj: converterValorMonetario(validarCampo(campos, 4, '0'))
+            valorAj: parseValorMonetario(validarCampo(campos, 4, '0'))
         };
     }
 
@@ -2026,7 +2037,7 @@ const SpedParser = (function() {
             tipo: 'receita_nao_tributada',
             categoria: 'cofins',
             cstCofins: validarCampo(campos, 2),
-            valorTotRec: converterValorMonetario(validarCampo(campos, 3, '0')),
+            valorTotRec: parseValorMonetario(validarCampo(campos, 3, '0')),
             codCta: validarCampo(campos, 4)
         };
     }
@@ -2037,7 +2048,7 @@ const SpedParser = (function() {
             tipo: 'detalhamento_receita_nao_tributada',
             categoria: 'cofins',
             natRec: validarCampo(campos, 2),
-            valorRec: converterValorMonetario(validarCampo(campos, 3, '0')),
+            valorRec: parseValorMonetario(validarCampo(campos, 3, '0')),
             codCta: validarCampo(campos, 4),
             descrCompl: validarCampo(campos, 5)
         };
@@ -2048,9 +2059,9 @@ const SpedParser = (function() {
         return {
             tipo: 'contribuicao_previdenciaria',
             categoria: 'previdenciaria',
-            valorBcCp: converterValorMonetario(validarCampo(campos, 2, '0')),
-            aliqCp: converterValorMonetario(validarCampo(campos, 3, '0')),
-            valorCp: converterValorMonetario(validarCampo(campos, 4, '0')),
+            valorBcCp: parseValorMonetario(validarCampo(campos, 2, '0')),
+            aliqCp: parseValorMonetario(validarCampo(campos, 3, '0')),
+            valorCp: parseValorMonetario(validarCampo(campos, 4, '0')),
             codCta: validarCampo(campos, 5),
             descrCompl: validarCampo(campos, 6)
         };
@@ -2063,7 +2074,7 @@ const SpedParser = (function() {
             categoria: 'previdenciaria',
             numCampo: validarCampo(campos, 2),
             codAj: validarCampo(campos, 3),
-            valorAjuste: converterValorMonetario(validarCampo(campos, 4, '0'))
+            valorAjuste: parseValorMonetario(validarCampo(campos, 4, '0'))
         };
     }
 
@@ -2082,9 +2093,9 @@ const SpedParser = (function() {
         return {
             tipo: 'consolidacao_contribuicao_previdenciaria',
             categoria: 'previdenciaria',
-            valorTotalCp: converterValorMonetario(validarCampo(campos, 2, '0')),
-            valorTotalAjuste: converterValorMonetario(validarCampo(campos, 3, '0')),
-            valorApagar: converterValorMonetario(validarCampo(campos, 4, '0'))
+            valorTotalCp: parseValorMonetario(validarCampo(campos, 2, '0')),
+            valorTotalAjuste: parseValorMonetario(validarCampo(campos, 3, '0')),
+            valorApagar: parseValorMonetario(validarCampo(campos, 4, '0'))
         };
     }
 
@@ -2095,7 +2106,7 @@ const SpedParser = (function() {
             categoria: 'previdenciaria',
             numCampo: validarCampo(campos, 2),
             codAj: validarCampo(campos, 3),
-            valorAjuste: converterValorMonetario(validarCampo(campos, 4, '0'))
+            valorAjuste: parseValorMonetario(validarCampo(campos, 4, '0'))
         };
     }
 
@@ -2113,11 +2124,11 @@ const SpedParser = (function() {
             tipo: 'totalizacao',
             categoria: 'pis',
             perApur: validarCampo(campos, 2),
-            valorRecBrt: converterValorMonetario(validarCampo(campos, 3, '0')),
-            valorBcPis: converterValorMonetario(validarCampo(campos, 4, '0')),
-            valorPis: converterValorMonetario(validarCampo(campos, 5, '0')),
-            valorCredPis: converterValorMonetario(validarCampo(campos, 6, '0')),
-            valorContribPis: converterValorMonetario(validarCampo(campos, 7, '0'))
+            valorRecBrt: parseValorMonetario(validarCampo(campos, 3, '0')),
+            valorBcPis: parseValorMonetario(validarCampo(campos, 4, '0')),
+            valorPis: parseValorMonetario(validarCampo(campos, 5, '0')),
+            valorCredPis: parseValorMonetario(validarCampo(campos, 6, '0')),
+            valorContribPis: parseValorMonetario(validarCampo(campos, 7, '0'))
         };
     }
 
@@ -2127,11 +2138,11 @@ const SpedParser = (function() {
             tipo: 'totalizacao',
             categoria: 'cofins',
             perApur: validarCampo(campos, 2),
-            valorRecBrt: converterValorMonetario(validarCampo(campos, 3, '0')),
-            valorBcCofins: converterValorMonetario(validarCampo(campos, 4, '0')),
-            valorCofins: converterValorMonetario(validarCampo(campos, 5, '0')),
-            valorCredCofins: converterValorMonetario(validarCampo(campos, 6, '0')),
-            valorContribCofins: converterValorMonetario(validarCampo(campos, 7, '0'))
+            valorRecBrt: parseValorMonetario(validarCampo(campos, 3, '0')),
+            valorBcCofins: parseValorMonetario(validarCampo(campos, 4, '0')),
+            valorCofins: parseValorMonetario(validarCampo(campos, 5, '0')),
+            valorCredCofins: parseValorMonetario(validarCampo(campos, 6, '0')),
+            valorContribCofins: parseValorMonetario(validarCampo(campos, 7, '0'))
         };
     }
 
@@ -2141,9 +2152,9 @@ const SpedParser = (function() {
             tipo: 'totalizacao',
             categoria: 'previdenciaria',
             perApur: validarCampo(campos, 2),
-            valorTotContPrev: converterValorMonetario(validarCampo(campos, 3, '0')),
-            valorTotFol: converterValorMonetario(validarCampo(campos, 4, '0')),
-            valorExcBcCont: converterValorMonetario(validarCampo(campos, 5, '0'))
+            valorTotContPrev: parseValorMonetario(validarCampo(campos, 3, '0')),
+            valorTotFol: parseValorMonetario(validarCampo(campos, 4, '0')),
+            valorExcBcCont: parseValorMonetario(validarCampo(campos, 5, '0'))
         };
     }
 
@@ -2153,10 +2164,10 @@ const SpedParser = (function() {
             tipo: 'totalizacao',
             categoria: 'geral',
             perApur: validarCampo(campos, 2),
-            valorRecTribMI: converterValorMonetario(validarCampo(campos, 3, '0')),
-            valorRecNTribMI: converterValorMonetario(validarCampo(campos, 4, '0')),
-            valorRecExp: converterValorMonetario(validarCampo(campos, 5, '0')),
-            valorRecTotExt: converterValorMonetario(validarCampo(campos, 6, '0'))
+            valorRecTribMI: parseValorMonetario(validarCampo(campos, 3, '0')),
+            valorRecNTribMI: parseValorMonetario(validarCampo(campos, 4, '0')),
+            valorRecExp: parseValorMonetario(validarCampo(campos, 5, '0')),
+            valorRecTotExt: parseValorMonetario(validarCampo(campos, 6, '0'))
         };
     }
 
@@ -2217,7 +2228,7 @@ const SpedParser = (function() {
             tipo: 'dre',
             codConta: validarCampo(campos, 2),
             descrConta: validarCampo(campos, 3),
-            valorConta: converterValorMonetario(validarCampo(campos, 4, '0')),
+            valorConta: parseValorMonetario(validarCampo(campos, 4, '0')),
             indDC: validarCampo(campos, 5)
         };
     }
@@ -2232,7 +2243,7 @@ const SpedParser = (function() {
             tipo: 'totalizacao_registro',
             categoria: 'controle',
             regBlc: validarCampo(campos, 2),
-            qtdRegBlc: converterValorMonetario(validarCampo(campos, 3, '0'))
+            qtdRegBlc: parseValorMonetario(validarCampo(campos, 3, '0'))
         };
     }
 
@@ -2241,7 +2252,7 @@ const SpedParser = (function() {
         return {
             tipo: 'encerramento_bloco',
             categoria: 'controle',
-            qtdLin9: converterValorMonetario(validarCampo(campos, 2, '0'))
+            qtdLin9: parseValorMonetario(validarCampo(campos, 2, '0'))
         };
     }
 
@@ -2250,7 +2261,7 @@ const SpedParser = (function() {
         return {
             tipo: 'encerramento_arquivo',
             categoria: 'controle',
-            qtdLin: converterValorMonetario(validarCampo(campos, 2, '0'))
+            qtdLin: parseValorMonetario(validarCampo(campos, 2, '0'))
         };
     }
 
@@ -2307,7 +2318,7 @@ const SpedParser = (function() {
             categoria: 'saldo_final',
             codConta: validarCampo(campos, 2),
             codCcus: validarCampo(campos, 3),
-            valorSaldo: converterValorMonetario(validarCampo(campos, 4, '0')),
+            valorSaldo: parseValorMonetario(validarCampo(campos, 4, '0')),
             indDC: validarCampo(campos, 5)
         };
     }
@@ -2319,7 +2330,7 @@ const SpedParser = (function() {
             categoria: 'saldo_final',
             codConta: validarCampo(campos, 2),
             codContaRef: validarCampo(campos, 3),
-            valorSaldo: converterValorMonetario(validarCampo(campos, 4, '0'))
+            valorSaldo: parseValorMonetario(validarCampo(campos, 4, '0'))
         };
     }
 
@@ -2350,7 +2361,7 @@ const SpedParser = (function() {
             categoria: 'lalur',
             codConta: validarCampo(campos, 2),
             descrConta: validarCampo(campos, 3),
-            valorConta: converterValorMonetario(validarCampo(campos, 4, '0')),
+            valorConta: parseValorMonetario(validarCampo(campos, 4, '0')),
             indDC: validarCampo(campos, 5)
         };
     }
@@ -2383,7 +2394,7 @@ const SpedParser = (function() {
             categoria: 'lalur',
             codLinha: validarCampo(campos, 2),
             descrLinha: validarCampo(campos, 3),
-            valorLinha: converterValorMonetario(validarCampo(campos, 4, '0'))
+            valorLinha: parseValorMonetario(validarCampo(campos, 4, '0'))
         };
     }
 
@@ -2394,7 +2405,7 @@ const SpedParser = (function() {
             categoria: 'lacs',
             codLinha: validarCampo(campos, 2),
             descrLinha: validarCampo(campos, 3),
-            valorLinha: converterValorMonetario(validarCampo(campos, 4, '0'))
+            valorLinha: parseValorMonetario(validarCampo(campos, 4, '0'))
         };
     }
 
@@ -2414,7 +2425,7 @@ const SpedParser = (function() {
             tipo: 'credito_imposto_exterior',
             categoria: 'imposto_exterior',
             paisOrigem: validarCampo(campos, 2),
-            valorImposto: converterValorMonetario(validarCampo(campos, 3, '0')),
+            valorImposto: parseValorMonetario(validarCampo(campos, 3, '0')),
             tipoRendimento: validarCampo(campos, 4)
         };
     }
@@ -2425,7 +2436,7 @@ const SpedParser = (function() {
             tipo: 'consolidacao_exterior',
             categoria: 'exterior',
             paisDestino: validarCampo(campos, 2),
-            valorOperacao: converterValorMonetario(validarCampo(campos, 3, '0')),
+            valorOperacao: parseValorMonetario(validarCampo(campos, 3, '0')),
             tipoOperacao: validarCampo(campos, 4)
         };
     }
@@ -2436,7 +2447,7 @@ const SpedParser = (function() {
             tipo: 'detalhe_exterior',
             categoria: 'exterior',
             codOperacao: validarCampo(campos, 2),
-            valorDetalhado: converterValorMonetario(validarCampo(campos, 3, '0'))
+            valorDetalhado: parseValorMonetario(validarCampo(campos, 3, '0'))
         };
     }
 
@@ -2447,7 +2458,7 @@ const SpedParser = (function() {
             categoria: 'exterior',
             nomeVinculada: validarCampo(campos, 2),
             paisVinculada: validarCampo(campos, 3),
-            valorVinculada: converterValorMonetario(validarCampo(campos, 4, '0'))
+            valorVinculada: parseValorMonetario(validarCampo(campos, 4, '0'))
         };
     }
 
@@ -2457,7 +2468,7 @@ const SpedParser = (function() {
             tipo: 'preco_transferencia',
             categoria: 'exterior',
             metodoPrecificacao: validarCampo(campos, 2),
-            valorAjuste: converterValorMonetario(validarCampo(campos, 3, '0'))
+            valorAjuste: parseValorMonetario(validarCampo(campos, 3, '0'))
         };
     }
 
@@ -2467,7 +2478,7 @@ const SpedParser = (function() {
             tipo: 'consolidacao_pais',
             categoria: 'exterior',
             codPais: validarCampo(campos, 2),
-            valorConsolidado: converterValorMonetario(validarCampo(campos, 3, '0'))
+            valorConsolidado: parseValorMonetario(validarCampo(campos, 3, '0'))
         };
     }
 
@@ -2477,7 +2488,7 @@ const SpedParser = (function() {
             tipo: 'detalhamento_pais',
             categoria: 'exterior',
             tipoOperacaoPais: validarCampo(campos, 2),
-            valorPais: converterValorMonetario(validarCampo(campos, 3, '0'))
+            valorPais: parseValorMonetario(validarCampo(campos, 3, '0'))
         };
     }
 
@@ -2487,7 +2498,7 @@ const SpedParser = (function() {
             tipo: 'complemento_exterior',
             categoria: 'exterior',
             informacaoComplementar: validarCampo(campos, 2),
-            valorComplemento: converterValorMonetario(validarCampo(campos, 3, '0'))
+            valorComplemento: parseValorMonetario(validarCampo(campos, 3, '0'))
         };
     }
 
@@ -2517,7 +2528,7 @@ const SpedParser = (function() {
             tipo: 'rendimento_exterior',
             categoria: 'rendimento',
             paisOrigem: validarCampo(campos, 2),
-            valorRendimento: converterValorMonetario(validarCampo(campos, 3, '0')),
+            valorRendimento: parseValorMonetario(validarCampo(campos, 3, '0')),
             tipoRendimento: validarCampo(campos, 4)
         };
     }
@@ -2528,7 +2539,7 @@ const SpedParser = (function() {
             tipo: 'imposto_exterior_pago',
             categoria: 'imposto_pago',
             paisImposto: validarCampo(campos, 2),
-            valorImposto: converterValorMonetario(validarCampo(campos, 3, '0'))
+            valorImposto: parseValorMonetario(validarCampo(campos, 3, '0'))
         };
     }
 
@@ -2537,7 +2548,7 @@ const SpedParser = (function() {
         return {
             tipo: 'credito_compensavel',
             categoria: 'credito',
-            valorCredito: converterValorMonetario(validarCampo(campos, 2, '0')),
+            valorCredito: parseValorMonetario(validarCampo(campos, 2, '0')),
             anoCredito: validarCampo(campos, 3)
         };
     }
@@ -2547,8 +2558,8 @@ const SpedParser = (function() {
         return {
             tipo: 'consolidacao_rendimento',
             categoria: 'rendimento',
-            totalRendimentos: converterValorMonetario(validarCampo(campos, 2, '0')),
-            totalImpostos: converterValorMonetario(validarCampo(campos, 3, '0'))
+            totalRendimentos: parseValorMonetario(validarCampo(campos, 2, '0')),
+            totalImpostos: parseValorMonetario(validarCampo(campos, 3, '0'))
         };
     }
 
@@ -2557,8 +2568,8 @@ const SpedParser = (function() {
         return {
             tipo: 'demonstrativo_credito',
             categoria: 'credito',
-            creditoDisponivel: converterValorMonetario(validarCampo(campos, 2, '0')),
-            creditoUtilizado: converterValorMonetario(validarCampo(campos, 3, '0'))
+            creditoDisponivel: parseValorMonetario(validarCampo(campos, 2, '0')),
+            creditoUtilizado: parseValorMonetario(validarCampo(campos, 3, '0'))
         };
     }
 
@@ -2589,7 +2600,7 @@ const SpedParser = (function() {
             categoria: 'receita',
             codRubrica: validarCampo(campos, 2),
             descrRubrica: validarCampo(campos, 3),
-            valorRubrica: converterValorMonetario(validarCampo(campos, 4, '0'))
+            valorRubrica: parseValorMonetario(validarCampo(campos, 4, '0'))
         };
     }
 
@@ -2599,7 +2610,7 @@ const SpedParser = (function() {
             tipo: 'deducao_receita',
             categoria: 'deducao',
             codDeducao: validarCampo(campos, 2),
-            valorDeducao: converterValorMonetario(validarCampo(campos, 3, '0'))
+            valorDeducao: parseValorMonetario(validarCampo(campos, 3, '0'))
         };
     }
 
@@ -2630,7 +2641,7 @@ const SpedParser = (function() {
             categoria: 'informacao',
             codInfo: validarCampo(campos, 2),
             descrInfo: validarCampo(campos, 3),
-            valorInfo: converterValorMonetario(validarCampo(campos, 4, '0'))
+            valorInfo: parseValorMonetario(validarCampo(campos, 4, '0'))
         };
     }
 
@@ -2641,7 +2652,7 @@ const SpedParser = (function() {
             tipo: 'receita_vendas_descontinuado',
             categoria: 'vendas',
             codAtividade: validarCampo(campos, 2),
-            valorVendas: converterValorMonetario(validarCampo(campos, 3, '0')),
+            valorVendas: parseValorMonetario(validarCampo(campos, 3, '0')),
             observacao: 'Registro descontinuado - Leiaute 7'
         };
     }
@@ -2757,7 +2768,7 @@ const SpedParser = (function() {
             categoria: 'termo',
             numOrd: validarCampo(campos, 2),
             natLivro: validarCampo(campos, 3),
-            qtdLinhas: converterValorMonetario(validarCampo(campos, 4, '0')),
+            qtdLinhas: parseValorMonetario(validarCampo(campos, 4, '0')),
             nomeCidade: validarCampo(campos, 5),
             dataAbert: validarCampo(campos, 6),
             numInscr: validarCampo(campos, 7)
@@ -2771,9 +2782,9 @@ const SpedParser = (function() {
             categoria: 'balanco',
             dataMovto: validarCampo(campos, 2),
             codCta: validarCampo(campos, 3),
-            valorDebito: converterValorMonetario(validarCampo(campos, 4, '0')),
-            valorCredito: converterValorMonetario(validarCampo(campos, 5, '0')),
-            valorSaldo: converterValorMonetario(validarCampo(campos, 6, '0')),
+            valorDebito: parseValorMonetario(validarCampo(campos, 4, '0')),
+            valorCredito: parseValorMonetario(validarCampo(campos, 5, '0')),
+            valorSaldo: parseValorMonetario(validarCampo(campos, 6, '0')),
             indDCCred: validarCampo(campos, 7)
         };
     }
@@ -2796,7 +2807,7 @@ const SpedParser = (function() {
             categoria: 'codigo',
             codCcus: validarCampo(campos, 2),
             codCta: validarCampo(campos, 3),
-            valorSaldo: converterValorMonetario(validarCampo(campos, 4, '0'))
+            valorSaldo: parseValorMonetario(validarCampo(campos, 4, '0'))
         };
     }
 
@@ -2830,8 +2841,8 @@ const SpedParser = (function() {
             dataIni: validarCampo(campos, 2),
             dataFim: validarCampo(campos, 3),
             codCta: validarCampo(campos, 4),
-            valorDebito: converterValorMonetario(validarCampo(campos, 5, '0')),
-            valorCredito: converterValorMonetario(validarCampo(campos, 6, '0'))
+            valorDebito: parseValorMonetario(validarCampo(campos, 5, '0')),
+            valorCredito: parseValorMonetario(validarCampo(campos, 6, '0'))
         };
     }
 
@@ -2842,9 +2853,9 @@ const SpedParser = (function() {
             categoria: 'saldo_detalhado',
             codCta: validarCampo(campos, 2),
             codCcus: validarCampo(campos, 3),
-            valorSaldoIni: converterValorMonetario(validarCampo(campos, 4, '0')),
+            valorSaldoIni: parseValorMonetario(validarCampo(campos, 4, '0')),
             indDCSaldoIni: validarCampo(campos, 5),
-            valorSaldoFim: converterValorMonetario(validarCampo(campos, 6, '0')),
+            valorSaldoFim: parseValorMonetario(validarCampo(campos, 6, '0')),
             indDCSaldoFim: validarCampo(campos, 7)
         };
     }
@@ -2858,7 +2869,7 @@ const SpedParser = (function() {
                 categoria: 'lancamento',
                 numLanc: validarCampo(campos, 2), // Número do lançamento
                 dataLanc: validarCampo(campos, 3), // Data do lançamento
-                valorLanc: converterValorMonetario(validarCampo(campos, 4, '0')), // Valor do lançamento
+                valorLanc: parseValorMonetario(validarCampo(campos, 4, '0')), // Valor do lançamento
                 indLanc: validarCampo(campos, 5), // Indicador do tipo de lançamento
                 descrLanc: validarCampo(campos, 6), // Descrição do lançamento
                 codHist: validarCampo(campos, 7), // Código do histórico
@@ -2881,7 +2892,7 @@ const SpedParser = (function() {
                 categoria: 'partida',
                 codCta: validarCampo(campos, 2), // ✅ Código da conta contábil (estava sendo buscado erroneamente no I200)
                 codCcus: validarCampo(campos, 3), // Código do centro de custos
-                valorPartida: converterValorMonetario(validarCampo(campos, 4, '0')), // Valor da partida
+                valorPartida: parseValorMonetario(validarCampo(campos, 4, '0')), // Valor da partida
                 indDC: validarCampo(campos, 5), // Indicador D/C
                 numLinea: validarCampo(campos, 6) // Número da linha
             };
@@ -2898,11 +2909,11 @@ const SpedParser = (function() {
             categoria: 'balancete',
             dataBalancete: validarCampo(campos, 2),
             codCta: validarCampo(campos, 3),
-            valorSaldoIni: converterValorMonetario(validarCampo(campos, 4, '0')),
+            valorSaldoIni: parseValorMonetario(validarCampo(campos, 4, '0')),
             indDCSaldoIni: validarCampo(campos, 5),
-            valorDebito: converterValorMonetario(validarCampo(campos, 6, '0')),
-            valorCredito: converterValorMonetario(validarCampo(campos, 7, '0')),
-            valorSaldoFim: converterValorMonetario(validarCampo(campos, 8, '0')),
+            valorDebito: parseValorMonetario(validarCampo(campos, 6, '0')),
+            valorCredito: parseValorMonetario(validarCampo(campos, 7, '0')),
+            valorSaldoFim: parseValorMonetario(validarCampo(campos, 8, '0')),
             indDCSaldoFim: validarCampo(campos, 9)
         };
     }
@@ -2925,7 +2936,7 @@ const SpedParser = (function() {
             dataResIni: validarCampo(campos, 2),
             dataResFim: validarCampo(campos, 3),
             codCta: validarCampo(campos, 4),
-            valorSaldoFim: converterValorMonetario(validarCampo(campos, 5, '0')),
+            valorSaldoFim: parseValorMonetario(validarCampo(campos, 5, '0')),
             indDCSaldoFim: validarCampo(campos, 6)
         };
     }
@@ -2936,7 +2947,7 @@ const SpedParser = (function() {
             tipo: 'resultado_centro_custo',
             categoria: 'resultado',
             codCcus: validarCampo(campos, 2),
-            valorResultado: converterValorMonetario(validarCampo(campos, 3, '0')),
+            valorResultado: parseValorMonetario(validarCampo(campos, 3, '0')),
             indDCRes: validarCampo(campos, 4)
         };
     }
@@ -2971,7 +2982,7 @@ const SpedParser = (function() {
             codAgl: validarCampo(campos, 2),
             nomeAgl: validarCampo(campos, 3),
             codAglSup: validarCampo(campos, 4),
-            valorAgl: converterValorMonetario(validarCampo(campos, 5, '0')),
+            valorAgl: parseValorMonetario(validarCampo(campos, 5, '0')),
             indDCAgl: validarCampo(campos, 6)
         };
     }
@@ -2984,7 +2995,7 @@ const SpedParser = (function() {
             codAgl: validarCampo(campos, 2),
             nomeAgl: validarCampo(campos, 3),
             codAglSup: validarCampo(campos, 4),
-            valorAgl: converterValorMonetario(validarCampo(campos, 5, '0')),
+            valorAgl: parseValorMonetario(validarCampo(campos, 5, '0')),
             indDCAgl: validarCampo(campos, 6)
         };
     }
@@ -3142,7 +3153,7 @@ const SpedParser = (function() {
             tipo: 'empresa_evento',
             categoria: 'consolidacao',
             codEmpresaEvento: validarCampo(campos, 2),
-            valorEvento: converterValorMonetario(validarCampo(campos, 3, '0'))
+            valorEvento: parseValorMonetario(validarCampo(campos, 3, '0'))
         };
     }
 
@@ -3174,7 +3185,7 @@ const SpedParser = (function() {
             tipo: 'saldo_consolidado',
             categoria: 'saldo_consolidado',
             codCtaConsolidada: validarCampo(campos, 2),
-            valorSaldoConsolidado: converterValorMonetario(validarCampo(campos, 3, '0')),
+            valorSaldoConsolidado: parseValorMonetario(validarCampo(campos, 3, '0')),
             indDCSaldoConsolidado: validarCampo(campos, 4)
         };
     }
@@ -3186,7 +3197,7 @@ const SpedParser = (function() {
             categoria: 'eliminacao',
             codEliminacao: validarCampo(campos, 2),
             descrEliminacao: validarCampo(campos, 3),
-            valorEliminacao: converterValorMonetario(validarCampo(campos, 4, '0')),
+            valorEliminacao: parseValorMonetario(validarCampo(campos, 4, '0')),
             codEmpresaOrigemElim: validarCampo(campos, 5),
             codEmpresaDestinoElim: validarCampo(campos, 6)
         };

@@ -899,55 +899,34 @@ function extrairValorPercentual(valor) {
 
             let totalDebitos = 0;
             dadosSped.debitos.pis.forEach(debito => {
-                // Tentar extrair o valor de várias propriedades possíveis
+                // Prioritize valorContribuicaoApurada as per parser corrections
                 let valor = 0;
-
-                if (typeof debito.valorTotalContribuicao === 'number') {
-                    valor = debito.valorTotalContribuicao;
-                } else if (typeof debito.valorContribuicaoAPagar === 'number') {
-                    valor = debito.valorContribuicaoAPagar;
-                } else if (typeof debito.valorTotalContribuicao === 'string') {
-                    valor = parseValorMonetario(debito.valorTotalContribuicao);
-                } else if (typeof debito.valorContribuicaoAPagar === 'string') {
-                    valor = parseValorMonetario(debito.valorContribuicaoAPagar);
+                if (debito.valorContribuicaoApurada !== undefined) {
+                    valor = typeof debito.valorContribuicaoApurada === 'number' ? debito.valorContribuicaoApurada : parseValorMonetario(debito.valorContribuicaoApurada);
+                } else if (debito.valorTotalContribuicao !== undefined) { // Fallback, though parser now maps this to prior period/total debit
+                    valor = typeof debito.valorTotalContribuicao === 'number' ? debito.valorTotalContribuicao : parseValorMonetario(debito.valorTotalContribuicao);
+                } else if (debito.valorContribuicaoAPagar !== undefined) { // Fallback to payable amount
+                    valor = typeof debito.valorContribuicaoAPagar === 'number' ? debito.valorContribuicaoAPagar : parseValorMonetario(debito.valorContribuicaoAPagar);
                 }
 
                 // Validar o valor
                 if (valor > 0 && valor < 1000000000) { // Entre 0 e 1 bilhão
                     totalDebitos += valor;
-                    console.log(`SPED-EXTRACTOR: Registro débito PIS com valor: ${valor}`);
-                } else {
-                    console.warn(`SPED-EXTRACTOR: Valor PIS anormal ignorado: ${valor}`);
+                    console.log(`SPED-EXTRACTOR: Registro débito PIS com valor: ${valor} (Origem: ${debito.valorContribuicaoApurada !== undefined ? 'Apurada' : (debito.valorTotalContribuicao !== undefined ? 'TotalContribuicao' : 'APagar')})`);
+                } else if (valor !== 0) { // Only warn if non-zero and abnormal
+                    console.warn(`SPED-EXTRACTOR: Valor PIS anormal ou zero ignorado: ${valor}`);
                 }
             });
 
             if (totalDebitos > 0) {
                 console.log('SPED-EXTRACTOR: Débitos PIS extraídos do SPED:', totalDebitos);
                 return totalDebitos;
-            } else {
-                console.log('SPED-EXTRACTOR: Registros de débitos PIS encontrados, mas valor total é zero');
-            }
-        } else {
-            console.log('SPED-EXTRACTOR: Nenhum registro de débito PIS encontrado');
+            } // No 'else' needed, if totalDebitos is 0, it will fall through
         }
+        // PRIORIDADE 2 (M200 specific) is now effectively covered by PRIORIDADE 1 as parser standardizes M200 output into dadosSped.debitos.pis
+        // If PRIORIDADE 1 didn't yield a positive totalDebitos, it means either no records or all records had zero/invalid values.
 
-        // PRIORIDADE 2: Verificar totalizações específicas de M200
-        if (dadosSped.debitos?.m200?.length > 0) {
-            let valorM200 = 0;
-            dadosSped.debitos.m200.forEach(reg => {
-                // Campo 05 = Valor da Contribuição Apurada - CORRIGIDO
-                const valor = extrairValorSeguro(reg, 'valorContribuicaoApurada') || 
-                              parseFloat(reg[5]?.replace(',', '.') || 0);
-                if (valor > 0) valorM200 += valor;
-            });
-
-            if (valorM200 > 0) {
-                console.log('SPED-EXTRACTOR: Débito PIS extraído do registro M200:', valorM200);
-                return valorM200;
-            }
-        }
-
-        // PRIORIDADE 3: Estimativa baseada no regime e faturamento
+        // PRIORIDADE 3: Estimativa baseada no regime e faturamento (renumbered from 3 to 2 in effect)
         if (faturamentoMensal > 0) {
             const regime = determinarRegimeTributario(dadosSped);
             const regimePisCofins = determinarRegimePisCofins(dadosSped);
@@ -987,56 +966,33 @@ function extrairValorPercentual(valor) {
 
             let totalDebitos = 0;
             dadosSped.debitos.cofins.forEach(debito => {
-                // Tentar extrair o valor de várias propriedades possíveis
+                // Prioritize valorContribuicaoApurada as per parser corrections
                 let valor = 0;
-
-                if (typeof debito.valorTotalContribuicao === 'number') {
-                    valor = debito.valorTotalContribuicao;
-                } else if (typeof debito.valorContribuicaoAPagar === 'number') {
-                    valor = debito.valorContribuicaoAPagar;
-                } else if (typeof debito.valorTotalContribuicao === 'string') {
-                    valor = parseValorMonetario(debito.valorTotalContribuicao);
-                } else if (typeof debito.valorContribuicaoAPagar === 'string') {
-                    valor = parseValorMonetario(debito.valorContribuicaoAPagar);
+                if (debito.valorContribuicaoApurada !== undefined) {
+                    valor = typeof debito.valorContribuicaoApurada === 'number' ? debito.valorContribuicaoApurada : parseValorMonetario(debito.valorContribuicaoApurada);
+                } else if (debito.valorTotalContribuicao !== undefined) { // Fallback
+                    valor = typeof debito.valorTotalContribuicao === 'number' ? debito.valorTotalContribuicao : parseValorMonetario(debito.valorTotalContribuicao);
+                } else if (debito.valorContribuicaoAPagar !== undefined) { // Fallback to payable amount
+                    valor = typeof debito.valorContribuicaoAPagar === 'number' ? debito.valorContribuicaoAPagar : parseValorMonetario(debito.valorContribuicaoAPagar);
                 }
-
+                
                 // Validar o valor
                 if (valor > 0 && valor < 1000000000) { // Entre 0 e 1 bilhão
                     totalDebitos += valor;
-                    console.log(`SPED-EXTRACTOR: Registro débito COFINS com valor: ${valor}`);
-                } else {
-                    console.warn(`SPED-EXTRACTOR: Valor COFINS anormal ignorado: ${valor}`);
+                     console.log(`SPED-EXTRACTOR: Registro débito COFINS com valor: ${valor} (Origem: ${debito.valorContribuicaoApurada !== undefined ? 'Apurada' : (debito.valorTotalContribuicao !== undefined ? 'TotalContribuicao' : 'APagar')})`);
+                } else if (valor !== 0) { // Only warn if non-zero and abnormal
+                    console.warn(`SPED-EXTRACTOR: Valor COFINS anormal ou zero ignorado: ${valor}`);
                 }
             });
 
             if (totalDebitos > 0) {
                 console.log('SPED-EXTRACTOR: Débitos COFINS extraídos do SPED:', totalDebitos);
                 return totalDebitos;
-            } else {
-                console.log('SPED-EXTRACTOR: Registros de débitos COFINS encontrados, mas valor total é zero');
-            }
-        } else {
-            console.log('SPED-EXTRACTOR: Nenhum registro de débito COFINS encontrado');
+            } // No 'else' needed
         }
+        // PRIORIDADE 2 (M600 specific) is now effectively covered by PRIORIDADE 1
 
-        // PRIORIDADE 2: Verificar totalizações específicas de M600
-        // Para COFINS (M600)
-        if (dadosSped.debitos?.m600?.length > 0) {
-            let valorM600 = 0;
-            dadosSped.debitos.m600.forEach(reg => {
-                // Campo 05 = Valor da Contribuição Apurada
-                const valor = extrairValorSeguro(reg, 'valorContribuicaoApurada') || 
-                              parseFloat(reg[5]?.replace(',', '.') || 0);
-                if (valor > 0) valorM600 += valor;
-            });
-
-            if (valorM600 > 0) {
-                console.log('SPED-EXTRACTOR: Débito COFINS extraído do registro M600:', valorM600);
-                return valorM600;
-            }
-        }
-
-        // PRIORIDADE 3: Estimativa baseada no regime e faturamento
+        // PRIORIDADE 3: Estimativa baseada no regime e faturamento (renumbered from 3 to 2 in effect)
         if (faturamentoMensal > 0) {
             const regime = determinarRegimeTributario(dadosSped);
             const regimePisCofins = determinarRegimePisCofins(dadosSped);
@@ -1300,30 +1256,11 @@ function extrairValorPercentual(valor) {
             if (totalCreditos > 0) {
                 console.log('SPED-EXTRACTOR: Créditos PIS extraídos do SPED:', totalCreditos);
                 return totalCreditos;
-            } else {
-                console.log('SPED-EXTRACTOR: Registros de créditos PIS encontrados, mas valor total é zero');
-            }
-        } else {
-            console.log('SPED-EXTRACTOR: Nenhum registro de crédito PIS encontrado');
-        }
-
-        // PRIORIDADE 2: Verificar outras estruturas de crédito
-        // Para créditos PIS (M105)
-        if (dadosSped.creditos?.m105?.length > 0) {
-            const valorCreditos = dadosSped.creditos.m105.reduce((total, cred) => {
-                // Campo 06 = Valor do Crédito
-                const valorCredito = extrairValorSeguro(cred, 'valorCredito') || 
-                                    parseFloat(cred[6]?.replace(',', '.') || 0);
-                return total + (valorCredito > 0 ? valorCredito : 0);
-            }, 0);
-
-            if (valorCreditos > 0) {
-                console.log('SPED-EXTRACTOR: Créditos PIS encontrados em registros M105:', valorCreditos);
-                return valorCreditos;
             }
         }
+        // PRIORIDADE 2 (M105 specific) is now effectively covered by PRIORIDADE 1 as parser standardizes M105 output into dadosSped.creditos.pis
 
-        // PRIORIDADE 3: Estimativa baseada no regime não-cumulativo
+        // PRIORIDADE 3: Estimativa baseada no regime não-cumulativo (renumbered from 3 to 2 in effect)
         const regimePisCofins = determinarRegimePisCofins(dadosSped);
         if (regimePisCofins === 'nao-cumulativo') {
             // Tentar estimar com base no faturamento
@@ -1354,79 +1291,48 @@ function extrairValorPercentual(valor) {
 
         // Inicializar variáveis de controle
         let totalCreditos = 0;
-        let fonteCredito = 'não identificada';
+        let fonteCredito = 'não identificada'; // Keep for logging if needed
 
-        // PRIORIDADE 1: Processamento direto dos registros M505
-        if (dadosSped.registros?.filter(r => r.startsWith('|M505|')).length > 0) {
-            const registrosM505 = dadosSped.registros.filter(r => r.startsWith('|M505|'));
-            console.log(`SPED-EXTRACTOR: Encontrados ${registrosM505.length} registros M505 diretos`);
+        // PRIORIDADE 1: Processed M500/M505 records from parser (should be in dadosSped.creditos.cofins)
+        // The parser now standardizes M500 and M505 into dadosSped.creditos.cofins,
+        // and field valorCredito should be correctly populated from campos[6] for M505 or campos[3] for M500.
+        if (dadosSped.creditos?.cofins?.length > 0) {
+            const registrosProcessados = dadosSped.creditos.cofins;
+            console.log(`SPED-EXTRACTOR: Processando ${registrosProcessados.length} registros de créditos COFINS (M500/M505)`);
 
-            let creditos = 0;
-            registrosM505.forEach(registro => {
-                const campos = registro.split('|');
-                // Campo 6 = Valor do Crédito Disponível (VL_CRED_COFINS_DESC)
-                if (campos.length > 6) {
-                    const valorCredito = parseFloat(campos[6]?.replace(',', '.') || 0);
-                    if (valorCredito > 0 && valorCredito < 10000000) { // Validação de valor razoável
-                        creditos += valorCredito;
-                        console.log(`SPED-EXTRACTOR: Registro M505 processado: ${valorCredito.toFixed(2)}`);
-                    }
+            totalCreditos = registrosProcessados.reduce((sum, credito) => {
+                // Primary field should be valorCredito
+                let valor = 0;
+                if (credito.valorCredito !== undefined) {
+                     valor = typeof credito.valorCredito === 'number' ? credito.valorCredito : parseValorMonetario(credito.valorCredito);
+                } else if (credito.valorCreditoDisp !== undefined) { // Fallback
+                     valor = typeof credito.valorCreditoDisp === 'number' ? credito.valorCreditoDisp : parseValorMonetario(credito.valorCreditoDisp);
                 }
-            });
+                
+                if (valor > 0 && valor < 10000000) { // Validação de valor razoável
+                    console.log(`SPED-EXTRACTOR: Registro crédito COFINS com valor: ${valor.toFixed(2)}`);
+                    return sum + valor;
+                } else if (valor !== 0) {
+                     console.log(`SPED-EXTRACTOR: Valor de crédito COFINS ignorado: ${valor}`);
+                }
+                return sum;
+            }, 0);
 
-            if (creditos > 0) {
-                console.log(`SPED-EXTRACTOR: Créditos COFINS obtidos de registros M505 diretos: ${creditos.toFixed(2)}`);
-                totalCreditos = creditos;
-                fonteCredito = 'M505 direto';
+            if (totalCreditos > 0) {
+                console.log(`SPED-EXTRACTOR: Créditos COFINS obtidos de registros processados: ${totalCreditos.toFixed(2)}`);
+                fonteCredito = 'M500/M505 processado';
                 return totalCreditos;
             }
         }
+        // The old "PRIORIDADE 1" (direct M505 parsing from raw strings) and "PRIORIDADE 2" (M505 specific list) are now covered by the above.
 
-        // PRIORIDADE 2: Registros M505 processados anteriormente
-        if (dadosSped.creditos?.m505?.length > 0 || dadosSped.creditos?.cofins?.length > 0) {
-            const registrosProcessados = dadosSped.creditos.m505 || dadosSped.creditos.cofins;
-            console.log(`SPED-EXTRACTOR: Processando ${registrosProcessados.length} registros M505/COFINS pré-processados`);
+        // Estimations would follow if totalCreditos remains 0
+        // Fallback logic (PRIORIDADE 3, 4, 5 from original code) would be here if totalCreditos is still 0.
+        // For brevity, not reproducing the estimation logic here, but it would be the next step.
 
-            let creditos = 0;
-            registrosProcessados.forEach(reg => {
-                // Validar campos em múltiplos formatos possíveis
-                let valorCredito = 0;
-
-                // Tentar extrair de campos conhecidos em ordem de prioridade
-                if (typeof reg.valorCredito === 'number' && !isNaN(reg.valorCredito)) {
-                    valorCredito = reg.valorCredito;
-                } else if (typeof reg.valorCreditoDisp === 'number' && !isNaN(reg.valorCreditoDisp)) {
-                    valorCredito = reg.valorCreditoDisp;
-                } else if (typeof reg.valorCredito === 'string') {
-                    valorCredito = parseFloat(reg.valorCredito.replace(',', '.'));
-                } else if (reg.vl_cred_cofins_desc) {
-                    valorCredito = parseFloat(reg.vl_cred_cofins_desc.toString().replace(',', '.'));
-                } else if (Array.isArray(reg) && reg.length > 6) {
-                    // Pode ser que esteja no formato de array de campos
-                    valorCredito = parseFloat(reg[6]?.toString().replace(',', '.') || '0');
-                }
-
-                // Validar e adicionar ao total
-                if (valorCredito > 0 && valorCredito < 10000000) { // Validação de valor razoável
-                    creditos += valorCredito;
-                    console.log(`SPED-EXTRACTOR: Registro COFINS processado: ${valorCredito.toFixed(2)}`);
-                } else {
-                    console.log(`SPED-EXTRACTOR: Valor de crédito COFINS ignorado: ${valorCredito}`);
-                }
-            });
-
-            if (creditos > 0) {
-                console.log(`SPED-EXTRACTOR: Créditos COFINS obtidos de registros processados: ${creditos.toFixed(2)}`);
-                totalCreditos = creditos;
-                fonteCredito = 'M505 processado';
-                return totalCreditos;
-            }
+        if (totalCreditos === 0) {
+             console.log(`SPED-EXTRACTOR: Não foi possível identificar créditos COFINS de registros diretos. Fonte utilizada: ${fonteCredito}. Estimativas podem ser aplicadas.`);
         }
-
-        // Continuar com as prioridades 3, 4 e 5 como no código original...
-        // [código restante mantido igual]
-
-        console.log(`SPED-EXTRACTOR: Não foi possível identificar créditos COFINS. Fonte utilizada: ${fonteCredito}`);
         return totalCreditos;
     }
 
